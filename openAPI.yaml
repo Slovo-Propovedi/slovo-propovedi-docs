@@ -1,27 +1,32 @@
 openapi: 3.0.0
 info:
-  title: API
-  version: '1.0'
-  description: Slovo Propovedi Admin API
+  title: Admin API — Слово.Проповеди
+  version: 1.0.0
+  description: |
+    REST API для административной панели проекта "Слово.Проповеди".
+    Позволяет управлять проповедями, плейлистами, разделами, загружать файлы и работать с пользователями.
 servers:
+  - url: http://localhost:3000
+    description: Локальный сервер разработки
   - url: https://api.slovo-propovedi.ru
-    description: Production API
+    description: Продакшн сервер
 tags:
   - name: Auth
-    description: Authentication endpoints
+    description: Аутентификация администраторов
   - name: Files
-    description: File upload and streaming
+    description: Загрузка и получение файлов через MinIO
   - name: Sermons
-    description: Sermon CRUD operations
+    description: Управление проповедями
   - name: Sections
-    description: Section CRUD operations
+    description: Управление разделами
   - name: Playlists
-    description: Playlist CRUD operations
+    description: Управление плейлистами
 paths:
   /files:
     post:
       operationId: AppController_uploadFile
-      summary: Upload file
+      summary: Загрузить файл (аудио, видео, изображение и др.)
+      description: Файл сохраняется в MinIO
       parameters: []
       requestBody:
         required: true
@@ -35,7 +40,7 @@ paths:
                   format: binary
       responses:
         '200':
-          description: ''
+          description: Файл успешно загружен
           content:
             application/json:
               schema:
@@ -66,7 +71,7 @@ paths:
   /files/{fileName}:
     get:
       operationId: AppController_getFile
-      summary: Get file
+      summary: Получить публичный URL файла
       parameters:
         - name: fileName
           required: true
@@ -75,7 +80,7 @@ paths:
             type: string
       responses:
         '200':
-          description: ''
+          description: Информация о файле
           content:
             application/json:
               schema:
@@ -97,7 +102,7 @@ paths:
   /section:
     post:
       operationId: SectionController_create
-      summary: Create section
+      summary: Создать раздел
       parameters: []
       requestBody:
         required: true
@@ -107,7 +112,7 @@ paths:
               $ref: '#/components/schemas/CreateSectionDto'
       responses:
         '200':
-          description: ''
+          description: Раздел создан
           content:
             application/json:
               schema:
@@ -116,11 +121,11 @@ paths:
         - Sections
     get:
       operationId: SectionController_findAll
-      summary: Get all sections
+      summary: Получить все разделы
       parameters: []
       responses:
         '200':
-          description: ''
+          description: Список разделов
           content:
             application/json:
               schema:
@@ -130,7 +135,7 @@ paths:
   /section/{id}:
     get:
       operationId: SectionController_findOne
-      summary: Get one section by id
+      summary: Получить раздел по ID
       parameters:
         - name: id
           required: true
@@ -140,7 +145,7 @@ paths:
             format: uuid
       responses:
         '200':
-          description: ''
+          description: Раздел
           content:
             application/json:
               schema:
@@ -149,7 +154,7 @@ paths:
         - Sections
     patch:
       operationId: SectionController_update
-      summary: Update one section by id
+      summary: Обновить раздел (включая связанные плейлисты)
       parameters:
         - name: id
           required: true
@@ -165,7 +170,7 @@ paths:
               $ref: '#/components/schemas/UpdateSectionDto'
       responses:
         '200':
-          description: ''
+          description: Раздел обновлён
           content:
             application/json:
               schema:
@@ -174,7 +179,7 @@ paths:
         - Sections
     delete:
       operationId: SectionController_remove
-      summary: Delete one section by id
+      summary: Удалить раздел
       parameters:
         - name: id
           required: true
@@ -184,7 +189,7 @@ paths:
             format: uuid
       responses:
         '200':
-          description: ''
+          description: Раздел удалён
           content:
             application/json:
               schema:
@@ -194,7 +199,7 @@ paths:
   /playlists:
     post:
       operationId: PlaylistController_create
-      summary: Create playlist
+      summary: Создать плейлист
       parameters: []
       requestBody:
         required: true
@@ -204,7 +209,7 @@ paths:
               $ref: '#/components/schemas/CreatePlaylistDto'
       responses:
         '200':
-          description: ''
+          description: Плейлист создан
           content:
             application/json:
               schema:
@@ -213,11 +218,11 @@ paths:
         - Playlists
     get:
       operationId: PlaylistController_findAll
-      summary: Get all playlists
+      summary: Получить все плейлисты
       parameters: []
       responses:
         '200':
-          description: ''
+          description: Список плейлистов
           content:
             application/json:
               schema:
@@ -227,7 +232,7 @@ paths:
   /playlists/{id}:
     get:
       operationId: PlaylistController_findOne
-      summary: Get one playlist by id
+      summary: Получить плейлист по ID (с проповедями)
       parameters:
         - name: id
           required: true
@@ -237,7 +242,7 @@ paths:
             format: uuid
       responses:
         '200':
-          description: ''
+          description: Плейлист
           content:
             application/json:
               schema:
@@ -246,7 +251,7 @@ paths:
         - Playlists
     patch:
       operationId: PlaylistController_update
-      summary: Update one playlist by id
+      summary: Обновить плейлист
       parameters:
         - name: id
           required: true
@@ -262,7 +267,7 @@ paths:
               $ref: '#/components/schemas/UpdatePlaylistDto'
       responses:
         '200':
-          description: ''
+          description: Плейлист обновлён
           content:
             application/json:
               schema:
@@ -271,7 +276,7 @@ paths:
         - Playlists
     delete:
       operationId: PlaylistController_remove
-      summary: Delete one playlist by id
+      summary: Удалить плейлист
       parameters:
         - name: id
           required: true
@@ -281,7 +286,7 @@ paths:
             format: uuid
       responses:
         '200':
-          description: ''
+          description: Плейлист удалён
           content:
             application/json:
               schema:
@@ -291,7 +296,7 @@ paths:
   /sermons:
     post:
       operationId: SermonController_create
-      summary: Create sermon
+      summary: Создать новую проповедь
       parameters: []
       requestBody:
         required: true
@@ -301,7 +306,7 @@ paths:
               $ref: '#/components/schemas/CreateSermonDto'
       responses:
         '200':
-          description: ''
+          description: Проповедь создана
           content:
             application/json:
               schema:
@@ -310,7 +315,7 @@ paths:
         - Sermons
     get:
       operationId: SermonController_findAll
-      summary: Get all sermons
+      summary: Получить список всех проповедей
       parameters:
         - name: take
           required: false
@@ -327,7 +332,7 @@ paths:
             format: uuid
       responses:
         '200':
-          description: ''
+          description: Список проповедей с количеством
           content:
             application/json:
               schema:
@@ -359,7 +364,7 @@ paths:
   /sermons/{id}:
     get:
       operationId: SermonController_findOne
-      summary: Get one sermon by id
+      summary: Получить одну проповедь по ID
       parameters:
         - name: id
           required: true
@@ -369,7 +374,7 @@ paths:
             format: uuid
       responses:
         '200':
-          description: ''
+          description: Проповедь
           content:
             application/json:
               schema:
@@ -378,7 +383,7 @@ paths:
         - Sermons
     patch:
       operationId: SermonController_update
-      summary: Update one sermon by id
+      summary: Обновить проповедь
       parameters:
         - name: id
           required: true
@@ -394,7 +399,7 @@ paths:
               $ref: '#/components/schemas/UpdateSermonDto'
       responses:
         '200':
-          description: ''
+          description: Проповедь обновлена
           content:
             application/json:
               schema:
@@ -403,7 +408,7 @@ paths:
         - Sermons
     delete:
       operationId: SermonController_remove
-      summary: Delete one sermon by id
+      summary: Удалить проповедь
       parameters:
         - name: id
           required: true
@@ -413,7 +418,7 @@ paths:
             format: uuid
       responses:
         '200':
-          description: ''
+          description: Проповедь удалена
           content:
             application/json:
               schema:
@@ -423,7 +428,8 @@ paths:
   /auth/login:
     post:
       operationId: AuthController_signIn
-      summary: Login with email and password
+      summary: Вход в админ-панель
+      description: Возвращает JWT токен для дальнейших запросов
       parameters: []
       requestBody:
         required: true
@@ -433,7 +439,7 @@ paths:
               $ref: '#/components/schemas/SignInRequestDto'
       responses:
         '200':
-          description: ''
+          description: Успешный вход
           content:
             application/json:
               schema:
@@ -443,7 +449,8 @@ paths:
   /auth/refresh:
     post:
       operationId: AuthController_refresh
-      summary: Refresh access and refresh tokens
+      summary: Обновить access и refresh токены
+      description: Принимает refresh токен и возвращает новую пару токенов
       parameters: []
       requestBody:
         required: true
@@ -453,7 +460,7 @@ paths:
               $ref: '#/components/schemas/RefreshTokenDto'
       responses:
         '200':
-          description: ''
+          description: Новая пара токенов
           content:
             application/json:
               schema:
@@ -463,11 +470,11 @@ paths:
   /auth/profile:
     get:
       operationId: AuthController_getProfile
-      summary: Get current admin profile
+      summary: Получить профиль текущего пользователя
       parameters: []
       responses:
         '200':
-          description: ''
+          description: Профиль пользователя
           content:
             application/json:
               schema:
@@ -480,6 +487,7 @@ components:
       scheme: bearer
       bearerFormat: JWT
       type: http
+      description: JWT токен, полученный после успешного логина
   schemas:
     HealthResponse:
       type: object
@@ -803,8 +811,8 @@ components:
           type: string
         book:
           type: string
+          nullable: true
           example: Genesis
-          description: Bible book reference
         chapter:
           type: number
         verse:
@@ -861,8 +869,8 @@ components:
           type: string
         book:
           type: string
+          nullable: true
           example: Genesis
-          description: Bible book reference
         chapter:
           type: number
         verse:
