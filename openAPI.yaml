@@ -1,242 +1,603 @@
-openapi: 3.0.3
+openapi: 3.0.0
 info:
-  title: Admin API — Слово.Проповеди
-  description: |
-    REST API для административной панели проекта "Слово.Проповеди".
-    Позволяет управлять проповедями, плейлистами, разделами, загружать файлы и работать с пользователями.
-  version: 1.0.0
-  contact:
-    name: Backend Team
-
+  title: API
+  version: '1.0'
+  description: Slovo Propovedi Admin API
 servers:
-  - url: http://localhost:3000
-    description: Локальный сервер разработки
   - url: https://api.slovo-propovedi.ru
-    description: Продакшн сервер
-
+    description: Production API
 tags:
   - name: Auth
-    description: Аутентификация администраторов
-  - name: Sermons
-    description: Управление проповедями
-  - name: Playlists
-    description: Управление плейлистами
-  - name: Sections
-    description: Управление разделами
+    description: Authentication endpoints
   - name: Files
-    description: Загрузка и получение файлов через MinIO
-
+    description: File upload and streaming
+  - name: Sermons
+    description: Sermon CRUD operations
+  - name: Sections
+    description: Section CRUD operations
+  - name: Playlists
+    description: Playlist CRUD operations
+paths:
+  /files:
+    post:
+      operationId: AppController_uploadFile
+      summary: Upload file
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IFileResponseDto'
+      tags:
+        - Files
+      security:
+        - bearer: []
+  /files/{fileName}/stream-url:
+    get:
+      operationId: AppController_getStreamUrl
+      summary: Get stream URL for file
+      parameters:
+        - name: fileName
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 'Presigned stream URL'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StreamUrlResponse'
+      tags:
+        - Files
+  /files/{fileName}:
+    get:
+      operationId: AppController_getFile
+      summary: Get file
+      parameters:
+        - name: fileName
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IFileResponseDto'
+      tags:
+        - Files
+  /health:
+    get:
+      operationId: HealthController_check
+      summary: Check service health
+      parameters: []
+      responses:
+        '200':
+          description: 'Service health status'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+  /section:
+    post:
+      operationId: SectionController_create
+      summary: Create section
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateSectionDto'
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SectionEntity'
+      tags:
+        - Sections
+    get:
+      operationId: SectionController_findAll
+      summary: Get all sections
+      parameters: []
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AllSectionsResponse'
+      tags:
+        - Sections
+  /section/{id}:
+    get:
+      operationId: SectionController_findOne
+      summary: Get one section by id
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SectionEntity'
+      tags:
+        - Sections
+    patch:
+      operationId: SectionController_update
+      summary: Update one section by id
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateSectionDto'
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SectionEntity'
+      tags:
+        - Sections
+    delete:
+      operationId: SectionController_remove
+      summary: Delete one section by id
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatusSectionsResponse'
+      tags:
+        - Sections
+  /playlists:
+    post:
+      operationId: PlaylistController_create
+      summary: Create playlist
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePlaylistDto'
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaylistEntity'
+      tags:
+        - Playlists
+    get:
+      operationId: PlaylistController_findAll
+      summary: Get all playlists
+      parameters: []
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AllPlaylistsResponse'
+      tags:
+        - Playlists
+  /playlists/{id}:
+    get:
+      operationId: PlaylistController_findOne
+      summary: Get one playlist by id
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaylistEntity'
+      tags:
+        - Playlists
+    patch:
+      operationId: PlaylistController_update
+      summary: Update one playlist by id
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdatePlaylistDto'
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaylistEntity'
+      tags:
+        - Playlists
+    delete:
+      operationId: PlaylistController_remove
+      summary: Delete one playlist by id
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatusPlaylistResponse'
+      tags:
+        - Playlists
+  /sermons:
+    post:
+      operationId: SermonController_create
+      summary: Create sermon
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateSermonDto'
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SermonEntity'
+      tags:
+        - Sermons
+    get:
+      operationId: SermonController_findAll
+      summary: Get all sermons
+      parameters:
+        - name: take
+          required: false
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+        - name: cursor
+          required: false
+          in: query
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AllSermonsResponse'
+      tags:
+        - Sermons
+  /sermons/{id}/stream-url:
+    get:
+      operationId: SermonController_getStreamUrl
+      summary: Get stream URL for sermon audio
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: 'Presigned stream URL'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StreamUrlResponse'
+      tags:
+        - Sermons
+      security:
+        - bearer: []
+  /sermons/{id}:
+    get:
+      operationId: SermonController_findOne
+      summary: Get one sermon by id
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SermonEntity'
+      tags:
+        - Sermons
+    patch:
+      operationId: SermonController_update
+      summary: Update one sermon by id
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateSermonDto'
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatusSermonResponse'
+      tags:
+        - Sermons
+    delete:
+      operationId: SermonController_remove
+      summary: Delete one sermon by id
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatusSermonResponse'
+      tags:
+        - Sermons
+  /auth/login:
+    post:
+      operationId: AuthController_signIn
+      summary: Login with email and password
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SignInRequestDto'
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+      tags:
+        - Auth
+  /auth/refresh:
+    post:
+      operationId: AuthController_refresh
+      summary: Refresh access and refresh tokens
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshTokenDto'
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RefreshResponse'
+      tags:
+        - Auth
+  /auth/profile:
+    get:
+      operationId: AuthController_getProfile
+      summary: Get current admin profile
+      parameters: []
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+      tags:
+        - Auth
 components:
   securitySchemes:
-    bearerAuth:
-      type: http
+    bearer:
       scheme: bearer
       bearerFormat: JWT
-      description: JWT токен, полученный после успешного логина
-
+      type: http
   schemas:
-    # ====================== Общие ======================
-    ErrorResponse:
+    HealthResponse:
       type: object
+      additionalProperties: false
       properties:
-        statusCode:
-          type: integer
-          example: 400
-        message:
+        status:
           type: string
-          example: 'Bad Request'
-        error:
-          type: string
-
-    # ====================== Auth ======================
-    SignInRequestDto:
-      type: object
       required:
-        - email
-        - password
-      properties:
-        email:
-          type: string
-          format: email
-          example: admin@slovoistini.com
-        password:
-          type: string
-          format: password
-          example: StrongPass123!
-
-    AuthResponse:
+        - status
+    StreamUrlResponse:
       type: object
       properties:
-        accessToken:
+        url:
           type: string
-          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
-        refreshToken:
-          type: string
-          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
-        user:
-          type: object
-          properties:
-            id:
-              type: string
-            name:
-              type: string
-            email:
-              type: string
-
-    UserEntity:
-      type: object
-      properties:
-        id:
-          type: string
-          format: uuid
-        name:
-          type: string
-        email:
-          type: string
-          format: email
-
-    RefreshTokenDto:
-      type: object
       required:
-        - refreshToken
-      properties:
-        refreshToken:
-          type: string
-          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
-
-    RefreshResponse:
+        - url
+    IFileResponseDto:
       type: object
-      properties:
-        accessToken:
-          type: string
-          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
-        refreshToken:
-          type: string
-          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
-
-    # ====================== Files ======================
-    FileUploadResponse:
-      type: object
+      additionalProperties: false
       properties:
         fileName:
           type: string
-          example: '3f8a9b2c-1d4e-4f5a-9b2c-8d7e6f5a4b3c.mp3'
         fileUrl:
           type: string
-          example: 'http://localhost:9000/files/3f8a9b2c-1d4e-4f5a-9b2c-8d7e6f5a4b3c.mp3'
-
-    # ====================== Sermon ======================
-    CreateSermonDto:
-      type: object
       required:
-        - title
-        - description
-        - artist
-        - artwork
-      properties:
-        title:
-          type: string
-          example: 'Проповедь о вере'
-        description:
-          type: string
-          example: 'Подробное описание проповеди...'
-        textFileUrl:
-          type: string
-          nullable: true
-        audioUrl:
-          type: string
-          nullable: true
-        youtubeUrl:
-          type: string
-          nullable: true
-        artist:
-          type: string
-        artwork:
-          type: string
-        book:
-          type: string
-          nullable: true
-          example: 'Genesis'
-        chapter:
-          type: number
-          nullable: true
-        verse:
-          nullable: true
-          oneOf:
-            - type: number
-            - type: array
-              items:
-                type: number
-              minItems: 2
-              maxItems: 2
-        playlistsIds:
-          type: array
-          items:
-            type: string
-            format: uuid
-          nullable: true
-
-    UpdateSermonDto:
+        - fileName
+        - fileUrl
+    CreateSectionDto:
       type: object
       properties:
         title:
           type: string
         description:
           type: string
-        textFileUrl:
+        itemsSize:
           type: string
-          nullable: true
-        audioUrl:
-          type: string
-          nullable: true
-        youtubeUrl:
-          type: string
-          nullable: true
-        artist:
-          type: string
-          nullable: true
-        artwork:
-          type: string
-          nullable: true
-        book:
-          type: string
-          nullable: true
-        chapter:
+          enum:
+            - small
+            - middle
+            - large
+            - xLarge
+        itemsRows:
           type: number
-          nullable: true
-        verse:
-          nullable: true
-          oneOf:
-            - type: number
-            - type: array
-              items:
-                type: number
-              minItems: 2
-              maxItems: 2
-        playlistsIds:
-          type: array
-          items:
-            type: string
-            format: uuid
-          nullable: true
-
-    SermonEntity:
-      type: object
+        transform:
+          type: string
+          enum:
+            - high
+            - short
+        isDescriptionTitleOnSlideLarge:
+          type: boolean
+        whereIsSlideTitleLocated:
+          type: string
+          enum:
+            - 'on'
+            - under
+            - bothOnAndUnder
+        borderRadius:
+          type: boolean
       required:
-        - id
         - title
-        - artist
-        - artwork
-        - description
+        - itemsSize
+        - transform
+    SectionEntity:
+      type: object
+      additionalProperties: false
       properties:
         id:
           type: string
-          format: uuid
         title:
           type: string
-        artist:
+        description:
           type: string
-        artwork:
+          nullable: true
+        itemsSize:
+          type: string
+          enum:
+            - small
+            - middle
+            - large
+            - xLarge
+        itemsRows:
+          type: number
+          nullable: true
+        transform:
+          type: string
+          enum:
+            - high
+            - short
+        isDescriptionTitleOnSlideLarge:
+          type: boolean
+          default: false
+        whereIsSlideTitleLocated:
+          type: string
+          enum:
+            - 'on'
+            - under
+            - bothOnAndUnder
+          default: under
+        borderRadius:
+          type: boolean
+          default: false
+        playlists:
+          type: array
+          items:
+            $ref: '#/components/schemas/PlaylistEntity'
+      required:
+        - id
+        - title
+        - itemsSize
+        - transform
+        - playlists
+    SermonEntity:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+        title:
           type: string
         description:
           type: string
@@ -248,53 +609,128 @@ components:
           nullable: true
         youtubeUrl:
           type: string
+          nullable: true
+        artist:
+          type: string
+        artwork:
+          type: string
+        book:
+          type: string
+          nullable: true
+        chapter:
+          type: number
+          nullable: true
+        verse:
+          oneOf:
+            - type: integer
+            - type: array
+              items:
+                type: integer
+              minItems: 2
+              maxItems: 2
           nullable: true
         playlists:
           type: array
           items:
             $ref: '#/components/schemas/PlaylistEntity'
-        book:
-          type: string
-          nullable: true
-          example: 'Genesis'
-        chapter:
-          type: number
-          nullable: true
-        verse:
-          nullable: true
-          oneOf:
-            - type: number
-            - type: array
-              items:
-                type: number
-              minItems: 2
-              maxItems: 2
-
-    AllSermonsResponse:
+      required:
+        - id
+        - title
+        - description
+        - textFileUrl
+        - audioUrl
+        - youtubeUrl
+        - artist
+        - artwork
+        - book
+        - chapter
+        - verse
+        - playlists
+    PlaylistEntity:
       type: object
+      additionalProperties: false
       properties:
+        id:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        artwork:
+          type: string
+        sections:
+          type: array
+          items:
+            $ref: '#/components/schemas/SectionEntity'
         sermons:
           type: array
           items:
             $ref: '#/components/schemas/SermonEntity'
-        count:
-          type: integer
-          example: 15
-
-    StatusSermonResponse:
-      type: object
-      properties:
-        status:
-          type: string
-          example: 'success'
-
-    # ====================== Playlist ======================
-    CreatePlaylistDto:
-      type: object
       required:
+        - id
         - title
         - description
         - artwork
+        - sections
+        - sermons
+    AllSectionsResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        sections:
+          type: array
+          items:
+            $ref: '#/components/schemas/SectionEntity'
+        count:
+          type: number
+      required:
+        - sections
+        - count
+    UpdateSectionDto:
+      type: object
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        playlistsIds:
+          type: array
+          items:
+            type: string
+        itemsSize:
+          type: string
+          enum:
+            - small
+            - middle
+            - large
+            - xLarge
+        itemsRows:
+          type: number
+        transform:
+          type: string
+          enum:
+            - high
+            - short
+        isDescriptionTitleOnSlideLarge:
+          type: boolean
+        whereIsSlideTitleLocated:
+          type: string
+          enum:
+            - 'on'
+            - under
+            - bothOnAndUnder
+        borderRadius:
+          type: boolean
+    StatusSectionsResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        status:
+          type: string
+      required:
+        - status
+    CreatePlaylistDto:
+      type: object
       properties:
         title:
           type: string
@@ -306,9 +742,23 @@ components:
           type: array
           items:
             type: string
-            format: uuid
-          example: ['uuid-sermon-1', 'uuid-sermon-2']
-
+      required:
+        - title
+        - description
+        - artwork
+    AllPlaylistsResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        playlists:
+          type: array
+          items:
+            $ref: '#/components/schemas/PlaylistEntity'
+        count:
+          type: number
+      required:
+        - playlists
+        - count
     UpdatePlaylistDto:
       type: object
       properties:
@@ -322,622 +772,172 @@ components:
           type: array
           items:
             type: string
-            format: uuid
         sectionsIds:
           type: array
           items:
             type: string
-            format: uuid
-          nullable: true
-
-    PlaylistEntity:
-      type: object
-      required:
-        - id
-        - title
-        - artwork
-        - sermons
-      properties:
-        id:
-          type: string
-          format: uuid
-        title:
-          type: string
-        artwork:
-          type: string
-        description:
-          type: string
-        sermons:
-          type: array
-          items:
-            $ref: '#/components/schemas/SermonEntity'
-        sections:
-          type: array
-          items:
-            $ref: '#/components/schemas/SectionEntity'
-
-    AllPlaylistsResponse:
-      type: object
-      properties:
-        playlists:
-          type: array
-          items:
-            $ref: '#/components/schemas/PlaylistEntity'
-        count:
-          type: integer
-          example: 8
-
     StatusPlaylistResponse:
       type: object
+      additionalProperties: false
       properties:
         status:
           type: string
-          example: 'success'
-
-    # ====================== Section ======================
-    CreateSectionDto:
-      type: object
       required:
-        - itemsSize
-        - title
-        - transform
-      properties:
-        title:
-          type: string
-        description:
-          type: string
-          nullable: true
-        itemsSize:
-          type: string
-          enum:
-            - small
-            - middle
-            - large
-            - xLarge
-        itemsRows:
-          type: integer
-          nullable: true
-        transform:
-          type: string
-          enum:
-            - high
-            - short
-        isDescriptionTitleOnSlideLarge:
-          type: boolean
-          nullable: true
-        whereIsSlideTitleLocated:
-          type: string
-          enum:
-            - on
-            - under
-            - bothOnAndUnder
-          nullable: true
-        borderRadius:
-          type: boolean
-          nullable: true
-
-    UpdateSectionDto:
+        - status
+    CreateSermonDto:
       type: object
       properties:
         title:
           type: string
         description:
           type: string
-          nullable: true
+        textFileUrl:
+          type: string
+        audioUrl:
+          type: string
+        youtubeUrl:
+          type: string
+        artist:
+          type: string
+        artwork:
+          type: string
+        book:
+          type: string
+          example: Genesis
+          description: Bible book reference
+        chapter:
+          type: number
+        verse:
+          oneOf:
+            - type: integer
+            - type: array
+              items:
+                type: integer
+              minItems: 2
+              maxItems: 2
         playlistsIds:
           type: array
           items:
             type: string
-            format: uuid
-        itemsSize:
-          type: string
-          enum:
-            - small
-            - middle
-            - large
-            - xLarge
-          nullable: true
-        itemsRows:
-          type: integer
-          nullable: true
-        transform:
-          type: string
-          enum:
-            - high
-            - short
-          nullable: true
-        isDescriptionTitleOnSlideLarge:
-          type: boolean
-          nullable: true
-        whereIsSlideTitleLocated:
-          type: string
-          enum:
-            - on
-            - under
-            - bothOnAndUnder
-          nullable: true
-        borderRadius:
-          type: boolean
-          nullable: true
-
-    SectionEntity:
-      type: object
       required:
-        - id
-        - itemsSize
-        - playlists
         - title
-        - transform
+        - description
+        - artist
+        - artwork
+    AllSermonsResponse:
+      type: object
+      additionalProperties: false
       properties:
-        id:
+        sermons:
+          type: array
+          items:
+            $ref: '#/components/schemas/SermonEntity'
+        count:
+          type: number
+          nullable: true
+        nextCursor:
           type: string
-          format: uuid
+          nullable: true
+      required:
+        - sermons
+        - count
+        - nextCursor
+    UpdateSermonDto:
+      type: object
+      properties:
         title:
           type: string
         description:
           type: string
-          nullable: true
-        itemsSize:
+        textFileUrl:
           type: string
-          enum:
-            - small
-            - middle
-            - large
-            - xLarge
-        itemsRows:
-          type: integer
-          nullable: true
-        transform:
+        audioUrl:
           type: string
-          enum:
-            - high
-            - short
-        isDescriptionTitleOnSlideLarge:
-          type: boolean
-          default: false
-        whereIsSlideTitleLocated:
+        youtubeUrl:
           type: string
-          enum:
-            - on
-            - under
-            - bothOnAndUnder
-          default: under
-        borderRadius:
-          type: boolean
-          default: false
-        playlists:
+        artist:
+          type: string
+        artwork:
+          type: string
+        book:
+          type: string
+          example: Genesis
+          description: Bible book reference
+        chapter:
+          type: number
+        verse:
+          oneOf:
+            - type: integer
+            - type: array
+              items:
+                type: integer
+              minItems: 2
+              maxItems: 2
+        playlistsIds:
           type: array
           items:
-            $ref: '#/components/schemas/PlaylistEntity'
-
-    AllSectionsResponse:
+            type: string
+    StatusSermonResponse:
       type: object
-      properties:
-        sections:
-          type: array
-          items:
-            $ref: '#/components/schemas/SectionEntity'
-        count:
-          type: integer
-          example: 5
-
-    StatusSectionsResponse:
-      type: object
+      additionalProperties: false
       properties:
         status:
           type: string
-          example: 'success'
-
-paths:
-  /auth/login:
-    post:
-      tags:
-        - Auth
-      operationId: authLogin
-      summary: Вход в админ-панель
-      description: Возвращает JWT токен для дальнейших запросов
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/SignInRequestDto'
-      responses:
-        '200':
-          description: Успешный вход
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/AuthResponse'
-        '401':
-          description: Неверные учетные данные
-
-  /auth/profile:
-    get:
-      tags:
-        - Auth
-      operationId: authGetProfile
-      summary: Получить профиль текущего пользователя
-      security:
-        - bearerAuth: []
-      responses:
-        '200':
-          description: Профиль пользователя
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/UserEntity'
-
-  /auth/refresh:
-    post:
-      tags:
-        - Auth
-      operationId: authRefresh
-      summary: Обновить access и refresh токены
-      description: Принимает refresh токен и возвращает новую пару токенов
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/RefreshTokenDto'
-      responses:
-        '200':
-          description: Новая пара токенов
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/RefreshResponse'
-        '401':
-          description: Недействительный или истёкший refresh токен
-
-  # ====================== FILES ======================
-  /files:
-    post:
-      tags:
-        - Files
-      operationId: uploadFile
-      summary: Загрузить файл (аудио, видео, изображение и др.)
-      description: Файл сохраняется в MinIO
-      security:
-        - bearerAuth: []
-      requestBody:
-        required: true
-        content:
-          multipart/form-data:
-            schema:
-              type: object
-              properties:
-                file:
-                  type: string
-                  format: binary
-      responses:
-        '200':
-          description: Файл успешно загружен
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/FileUploadResponse'
-
-  /files/{fileName}:
-    get:
-      tags:
-        - Files
-      operationId: getFileUrl
-      summary: Получить публичный URL файла
-      parameters:
-        - name: fileName
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Информация о файле
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/FileUploadResponse'
-
-  # ====================== SERMONS ======================
-  /sermons:
-    post:
-      tags: [Sermons]
-      operationId: createSermon
-      summary: Создать новую проповедь
-      security:
-        - bearerAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/CreateSermonDto'
-      responses:
-        '200':
-          description: Проповедь создана
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SermonEntity'
-
-    get:
-      tags: [Sermons]
-      operationId: getAllSermons
-      summary: Получить список всех проповедей
-      responses:
-        '200':
-          description: Список проповедей с количеством
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/AllSermonsResponse'
-
-  /sermons/{id}:
-    get:
-      tags: [Sermons]
-      operationId: getSermonById
-      summary: Получить одну проповедь по ID
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-      responses:
-        '200':
-          description: Проповедь
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SermonEntity'
-
-    patch:
-      tags: [Sermons]
-      operationId: updateSermon
-      summary: Обновить проповедь
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/UpdateSermonDto'
-      responses:
-        '200':
-          description: Проповедь обновлена
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/StatusSermonResponse'
-
-    delete:
-      tags: [Sermons]
-      operationId: deleteSermon
-      summary: Удалить проповедь
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-      responses:
-        '200':
-          description: Проповедь удалена
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/StatusSermonResponse'
-
-  # ====================== PLAYLISTS ======================
-  /playlists:
-    post:
-      tags: [Playlists]
-      operationId: createPlaylist
-      summary: Создать плейлист
-      security:
-        - bearerAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/CreatePlaylistDto'
-      responses:
-        '200':
-          description: Плейлист создан
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PlaylistEntity'
-
-    get:
-      tags: [Playlists]
-      operationId: getAllPlaylists
-      summary: Получить все плейлисты
-      responses:
-        '200':
-          description: Список плейлистов
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/AllPlaylistsResponse'
-
-  /playlists/{id}:
-    get:
-      tags: [Playlists]
-      operationId: getPlaylistById
-      summary: Получить плейлист по ID (с проповедями)
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-      responses:
-        '200':
-          description: Плейлист
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PlaylistEntity'
-
-    patch:
-      tags: [Playlists]
-      operationId: updatePlaylist
-      summary: Обновить плейлист
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/UpdatePlaylistDto'
-      responses:
-        '200':
-          description: Плейлист обновлён
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PlaylistEntity'
-
-    delete:
-      tags: [Playlists]
-      operationId: deletePlaylist
-      summary: Удалить плейлист
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-      responses:
-        '200':
-          description: Плейлист удалён
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/StatusPlaylistResponse'
-
-  # ====================== SECTIONS ======================
-  /section:
-    post:
-      tags: [Sections]
-      operationId: createSection
-      summary: Создать раздел
-      security:
-        - bearerAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/CreateSectionDto'
-      responses:
-        '200':
-          description: Раздел создан
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SectionEntity'
-
-    get:
-      tags: [Sections]
-      operationId: getAllSections
-      summary: Получить все разделы
-      responses:
-        '200':
-          description: Список разделов
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/AllSectionsResponse'
-
-  /section/{id}:
-    get:
-      tags: [Sections]
-      operationId: getSectionById
-      summary: Получить раздел по ID
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-      responses:
-        '200':
-          description: Раздел
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SectionEntity'
-
-    patch:
-      tags: [Sections]
-      operationId: updateSection
-      summary: Обновить раздел (включая связанные плейлисты)
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/UpdateSectionDto'
-      responses:
-        '200':
-          description: Раздел обновлён
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SectionEntity'
-
-    delete:
-      tags: [Sections]
-      operationId: deleteSection
-      summary: Удалить раздел
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-      responses:
-        '200':
-          description: Раздел удалён
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/StatusSectionsResponse'
+      required:
+        - status
+    SignInRequestDto:
+      type: object
+      properties:
+        email:
+          type: string
+        password:
+          type: string
+      required:
+        - email
+        - password
+    UserResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        email:
+          type: string
+      required:
+        - id
+        - name
+        - email
+    AuthResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        accessToken:
+          type: string
+        refreshToken:
+          type: string
+        user:
+          $ref: '#/components/schemas/UserResponse'
+      required:
+        - accessToken
+        - refreshToken
+        - user
+    RefreshTokenDto:
+      type: object
+      properties:
+        refreshToken:
+          type: string
+      required:
+        - refreshToken
+    RefreshResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        accessToken:
+          type: string
+        refreshToken:
+          type: string
+      required:
+        - accessToken
+        - refreshToken
