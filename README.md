@@ -1,4 +1,4 @@
-# slovo-propovedi-swagger
+# slovo-propovedi-docs
 
 Standalone Swagger UI + OpenAPI spec service for the **Admin API — Слово.Проповеди**.
 
@@ -8,15 +8,15 @@ or backend containers are required to run it.
 
 ## What it serves
 
-| Endpoint        | Description                                    |
-|-----------------|------------------------------------------------|
-| `/`             | Swagger UI (interactive API documentation)     |
-| `/openAPI.yaml` | The OpenAPI 3.0.3 specification (raw YAML)     |
+| Endpoint        | Description                                |
+| --------------- | ------------------------------------------ |
+| `/`             | Swagger UI (interactive API documentation) |
+| `/openAPI.yaml` | The OpenAPI 3.0.3 specification (raw YAML) |
 
 ## Build the Docker image
 
 ```bash
-docker build -t slovo-propovedi-swagger .
+docker build -t slovo-propovedi-docs .
 ```
 
 The build downloads `swagger-ui-dist` (default `5.32.12`, overridable via the
@@ -25,13 +25,13 @@ and `nginx.conf` into a minimal `nginx:alpine` image. There is no Node.js runtim
 
 ```bash
 # With a specific Swagger UI version
-docker build --build-arg SWAGGER_UI_VERSION=5.32.12 -t slovo-propovedi-swagger .
+docker build --build-arg SWAGGER_UI_VERSION=5.32.12 -t slovo-propovedi-docs .
 ```
 
 ## Run it locally
 
 ```bash
-docker run --rm -p 8080:8080 slovo-propovedi-swagger
+docker run --rm -p 8080:8080 slovo-propovedi-docs
 ```
 
 Then open <http://localhost:8080/> to browse the API documentation.
@@ -49,7 +49,7 @@ curl -s http://localhost:8080/openAPI.yaml | head
 2. Rebuild the image:
 
    ```bash
-   docker build -t slovo-propovedi-swagger .
+   docker build -t slovo-propovedi-docs .
    ```
 
 3. Restart the container with the new image.
