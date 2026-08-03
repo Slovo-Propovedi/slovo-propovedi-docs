@@ -52,7 +52,7 @@ paths:
   /files/{fileName}/stream-url:
     get:
       operationId: AppController_getStreamUrl
-      summary: Get stream URL for file
+      summary: Получить URL потока для файла
       parameters:
         - name: fileName
           required: true
@@ -61,7 +61,7 @@ paths:
             type: string
       responses:
         '200':
-          description: 'Presigned stream URL'
+          description: 'Предварительно подписанный URL потока'
           content:
             application/json:
               schema:
@@ -90,11 +90,11 @@ paths:
   /health:
     get:
       operationId: HealthController_check
-      summary: Check service health
+      summary: Проверить состояние сервиса
       parameters: []
       responses:
         '200':
-          description: 'Service health status'
+          description: 'Состояние сервиса'
           content:
             application/json:
               schema:
@@ -342,7 +342,7 @@ paths:
   /sermons/{id}/stream-url:
     get:
       operationId: SermonController_getStreamUrl
-      summary: Get stream URL for sermon audio
+      summary: Получить URL потока для аудио проповеди
       parameters:
         - name: id
           required: true
@@ -352,7 +352,7 @@ paths:
             format: uuid
       responses:
         '200':
-          description: 'Presigned stream URL'
+          description: 'Предварительно подписанный URL потока'
           content:
             application/json:
               schema:
