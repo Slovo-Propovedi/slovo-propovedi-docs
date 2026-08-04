@@ -21,10 +21,13 @@ RUN npm install --omit=dev
 # Copy the full working v5 SPA from the official image
 COPY --from=editor-assets /usr/share/nginx/html ./public/editor
 
-# Our save-bar script
+# Our save-bar script + vendored monaco-vim (UMD) and its API shim.
+# Order in the HTML matters: shim before UMD (patch-index.js injects them so).
 COPY public/save-bar.js ./public/editor/save-bar.js
+COPY public/monaco-vim-shim.js ./public/editor/monaco-vim-shim.js
+COPY public/monaco-vim.umd.js ./public/editor/monaco-vim.umd.js
 
-# Patch the editor index.html (expose window.monaco + load our save-bar)
+# Patch the editor index.html (expose window.monaco + load shim/UMD/save-bar)
 COPY patch-index.js ./
 RUN node patch-index.js ./public/editor/index.html
 

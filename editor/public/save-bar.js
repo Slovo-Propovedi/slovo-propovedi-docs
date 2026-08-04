@@ -15,11 +15,24 @@
  *      the standalone editor API (patch-index.js sets MonacoEnvironment.globalAPI).
  *   3. window.monaco.editor.getModels()[0]   — first attached model.
  *   4. localStorage["swagger-editor-content"]— editor-content-persistence plugin.
+ *
+ * Vim mode (dev only): monaco-vim 0.4.4 (monaco-vim.umd.js + the API shim
+ * monaco-vim-shim.js) is injected by patch-index.js as classic scripts, with the
+ * shim BEFORE the UMD (the UMD captures window.monaco at load time). The shim is
+ * required because v5.8.4's window.monaco ends up being the live editor instance,
+ * not the monaco API. This file starts vim mode once the editor is mounted,
+ * wires the :w ex command to saveToDisk(), and adds a "Vim: on/off" toggle
+ * (persisted in localStorage under 'sp-vim-enabled', default on).
  */
 (function () {
   'use strict';
 
   const SPEC_STORAGE_KEY = 'swagger-editor-content';
+  const VIM_PREF_KEY = 'sp-vim-enabled';
+
+  let vimDisposable = null;
+  let vimStatusEl = null;
+  let vimToggleBtn = null;
 
   function nowLabel() {
     return new Date().toLocaleTimeString();
@@ -84,19 +97,32 @@
     editors[0].setValue(text);
   }
 
+  function getEditorInstance() {
+    // The live editor instance: v5.8.4's editorSetup hook sets globalThis.editor
+    // (and globalThis.monaco) when the 'monaco' editor mounts. Fall back to the
+    // standalone API's getEditors() for robustness, like the other helpers.
+    if (window.editor && typeof window.editor.getValue === 'function') return window.editor;
+    const editorApi = window.monaco && window.monaco.editor;
+    if (editorApi && typeof editorApi.getEditors === 'function') {
+      const editors = editorApi.getEditors();
+      if (editors && editors.length > 0) return editors[0];
+    }
+    return null;
+  }
+
   function waitForMonaco(callback) {
     const POLL_MS = 200;
     const MAX_TRIES = 150;
     let tries = 0;
     const timer = setInterval(() => {
       tries += 1;
+      // Wait ONLY for the live editor instance. Deliberately NOT the standalone
+      // API's getEditors(): with globalAPI:true the real monaco API appears on
+      // window.monaco BEFORE editorSetup assigns window.editor, and resolving on
+      // apiReady there races vim init against an editor that is not mounted yet.
       const instanceReady =
         window.editor && typeof window.editor.getValue === 'function';
-      const apiReady =
-        window.monaco && window.monaco.editor && window.monaco.editor.getEditors
-          ? window.monaco.editor.getEditors().length > 0
-          : false;
-      if (instanceReady || apiReady) {
+      if (instanceReady) {
         clearInterval(timer);
         callback(null);
         return;
@@ -161,6 +187,125 @@
       .catch((err) => setStatus(err.message, true));
   }
 
+  // ===== Vim mode (monaco-vim 0.4.4) =====
+  //
+  // The official v5.8.4 bundle never exposes a real monaco API on the main
+  // thread: `window.monaco` is the LIVE editor instance (editorSetup hook), so
+  // monaco-vim's shim (monaco-vim-shim.js, loaded before the UMD) supplies the
+  // small API surface it needs. The editor instance itself lacks a few methods
+  // monaco-vim calls — patchEditorForVim adds them.
+
+  function patchEditorForVim(editor) {
+    if (typeof editor.getConfiguration !== 'function') {
+      editor.getConfiguration = function () {
+        const model = editor.getModel();
+        const opts = model ? model.getOptions() : {};
+        return {
+          readOnly: false,
+          viewInfo: { cursorWidth: 2 },
+          fontInfo: {
+            typicalFullwidthCharacterWidth: 7,
+            lineHeight: opts.lineHeight || 18,
+          },
+        };
+      };
+    }
+    if (typeof editor.getRawConfiguration !== 'function') {
+      editor.getRawConfiguration = function () {
+        const model = editor.getModel();
+        const opts = model ? model.getOptions() : {};
+        return {
+          tabSize: opts.tabSize || 2,
+          indentSize: opts.indentSize || 2,
+          insertSpaces: opts.insertSpaces !== false,
+          indentWithTabs: opts.insertSpaces === false,
+          keyMap: 'vim',
+          mode: 'vim',
+          pcre: false,
+          theme: undefined,
+          insertModeEscKeysTimeout: 200,
+        };
+      };
+    }
+    // Only used by `>>` / `<<` (indent commands).
+    if (typeof editor._getCursors !== 'function') {
+      editor._getCursors = function () {
+        const model = editor.getModel();
+        const opts = model ? model.getOptions() : {};
+        return {
+          context: {
+            config: {
+              tabSize: opts.tabSize || 2,
+              indentSize: opts.indentSize || 2,
+              insertSpaces: opts.insertSpaces !== false,
+              useTabStops: false,
+              autoIndent: false,
+            },
+          },
+        };
+      };
+    }
+  }
+
+  function updateVimToggle() {
+    if (!vimToggleBtn) return;
+    const on = Boolean(vimDisposable);
+    vimToggleBtn.textContent = 'Vim: ' + (on ? 'on' : 'off');
+    vimToggleBtn.classList.toggle('sp-active', on);
+  }
+
+  function startVimMode() {
+    if (vimDisposable) return;
+    if (!window.MonacoVim || typeof window.MonacoVim.initVimMode !== 'function') {
+      setStatus('Vim: monaco-vim not loaded (check /monaco-vim.umd.js)', true);
+      updateVimToggle();
+      return;
+    }
+    const editor = getEditorInstance();
+    if (!editor) {
+      setStatus('Vim init failed: editor instance not ready yet.', true);
+      updateVimToggle();
+      return;
+    }
+    try {
+      patchEditorForVim(editor);
+      // Wire the :w ex command to the existing save-to-disk flow.
+      window.MonacoVim.VimMode.commands.save = function () {
+        saveToDisk();
+      };
+      vimDisposable = window.MonacoVim.initVimMode(editor, vimStatusEl);
+    } catch (err) {
+      vimDisposable = null;
+      setStatus('Vim init failed: ' + err.message, true);
+      updateVimToggle();
+      return;
+    }
+    updateVimToggle();
+  }
+
+  function stopVimMode() {
+    if (vimDisposable) {
+      vimDisposable.dispose();
+      vimDisposable = null;
+    }
+    updateVimToggle();
+  }
+
+  function toggleVimMode() {
+    const enable = !vimDisposable;
+    if (enable) startVimMode();
+    else stopVimMode();
+    localStorage.setItem(VIM_PREF_KEY, enable ? '1' : '0');
+  }
+
+  function startVimModeIfPreferred() {
+    if (localStorage.getItem(VIM_PREF_KEY) === '0') {
+      updateVimToggle();
+      return;
+    }
+    startVimMode();
+  }
+
   function createControlBar() {
     const style = document.createElement('style');
     style.textContent = [
@@ -191,8 +336,43 @@
       '  cursor: pointer;',
       '}',
       '#sp-control-bar button:hover { background: #ffffff; }',
+      // Vim-armed state: a committed amber accent on the toggle button only.
+      '#sp-control-bar button.sp-active {',
+      '  background: #f0b429;',
+      '  color: #1e222c;',
+      '  font-weight: 600;',
+      '}',
+      '#sp-control-bar button.sp-active:hover { background: #f5c244; }',
       '#sp-status { max-width: 420px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }',
       '#sp-status.sp-error { color: #ff7b72; }',
+      // Vim status/command bar (bottom-left). monaco-vim toggles display itself.
+      '#sp-vim-status {',
+      '  position: fixed;',
+      '  bottom: 12px;',
+      '  left: 12px;',
+      '  z-index: 99999;',
+      '  display: none;',
+      '  font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;',
+      '  font-size: 12px;',
+      '  color: #f5f6f8;',
+      '  background: rgba(30, 34, 44, 0.92);',
+      '  border: 1px solid rgba(255, 255, 255, 0.15);',
+      '  border-radius: 6px;',
+      '  padding: 4px 10px;',
+      '  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);',
+      '  white-space: nowrap;',
+      '}',
+      '#sp-vim-status input {',
+      '  background: #14171f;',
+      '  color: #f5f6f8;',
+      '  border: 1px solid rgba(255, 255, 255, 0.25);',
+      '  border-radius: 3px;',
+      '  font: inherit;',
+      '  margin-left: 4px;',
+      '  padding: 1px 4px;',
+      '  outline: none;',
+      '}',
+      '#sp-vim-status .vim-notification { color: #ffb454; margin-left: 8px; }',
     ].join('\n');
     document.head.appendChild(style);
 
@@ -201,20 +381,29 @@
     bar.innerHTML =
       '<button id="sp-load" type="button">Load from disk</button>' +
       '<button id="sp-save" type="button">Save to disk</button>' +
+      '<button id="sp-vim-toggle" type="button" title="Toggle Vim keybindings">Vim: off</button>' +
       '<span id="sp-status"></span>';
     document.body.appendChild(bar);
+
+    vimStatusEl = document.createElement('div');
+    vimStatusEl.id = 'sp-vim-status';
+    document.body.appendChild(vimStatusEl);
   }
 
   window.addEventListener('DOMContentLoaded', () => {
     createControlBar();
+    vimToggleBtn = document.getElementById('sp-vim-toggle');
     document.getElementById('sp-load').addEventListener('click', loadFromDisk);
     document.getElementById('sp-save').addEventListener('click', saveToDisk);
+    vimToggleBtn.addEventListener('click', toggleVimMode);
     waitForMonaco((err) => {
       if (err) {
         setStatus(err.message, true);
         return;
       }
-      loadFromDisk();
+      // Start vim only after the disk content is loaded, so the editor
+      // instance is fully mounted and stable when initVimMode attaches.
+      loadFromDisk().then(startVimModeIfPreferred, startVimModeIfPreferred);
     });
   });
 })();

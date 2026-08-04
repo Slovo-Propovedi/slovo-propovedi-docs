@@ -4,6 +4,18 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Admin API — Слово.Проповеди</title>
+  <script>
+    (function () {
+      var KEY = 'swagger-theme';
+      var mql = window.matchMedia('(prefers-color-scheme: dark)');
+      var mode = localStorage.getItem(KEY) || 'auto'; // 'light' | 'dark' | 'auto'
+      function effective(m){ return m === 'auto' ? (mql.matches ? 'dark' : 'light') : m; }
+      function apply(m){ document.documentElement.classList.toggle('dark-mode', effective(m) === 'dark'); }
+      apply(mode);
+      window.__swaggerTheme = { mode: mode, mql: mql, apply: apply, effective: effective };
+      mql.addEventListener('change', function(){ if (window.__swaggerTheme.mode === 'auto') apply('auto'); });
+    })();
+  </script>
   <link rel="stylesheet" href="./swagger-ui.css">
   <link rel="icon" type="image/png" href="./favicon-32x32.png" sizes="32x32">
   <link rel="icon" type="image/png" href="./favicon-16x16.png" sizes="16x16">
@@ -19,10 +31,90 @@
       margin: 0;
       background: #fafafa;
     }
+
+    /* ---- Theme control ---- */
+
+    /* Native gap (swagger-ui 5.32.12): dark UA scrollbars/inputs */
+    html.dark-mode {
+      color-scheme: dark;
+    }
+
+    /* Override the hardcoded light body background so there is no light
+       strip around .swagger-ui (native dark bg is #1c2022). */
+    html.dark-mode body {
+      background: #1c2022;
+    }
+
+    /* Hide Swagger UI's built-in lightbulb toggle — redundant with the
+       tri-state control below. The Standalone preset renders it as
+       div.dark-mode-toggle inside the topbar. */
+    .dark-mode-toggle {
+      display: none;
+    }
+
+    /* Segmented control, bottom-right. Colors use the native swagger-ui
+       palette so it reads as part of the page in both themes. */
+    .theme-switch {
+      position: fixed;
+      right: 12px;
+      bottom: 12px;
+      z-index: 1000;
+      display: inline-flex;
+      gap: 2px;
+      padding: 3px;
+      border: 1px solid #d3d6d9;
+      border-radius: 8px;
+      background: #fbfbfb;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, .15);
+      font: 12px/1 system-ui, -apple-system, "Segoe UI", sans-serif;
+    }
+    html.dark-mode .theme-switch {
+      border-color: #545d61;
+      background: #2a2e30;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, .4);
+    }
+    .theme-switch button {
+      appearance: none;
+      border: 0;
+      border-radius: 6px;
+      padding: 5px 10px;
+      background: transparent;
+      color: #3b4151;
+      font: inherit;
+      cursor: pointer;
+      transition: background-color .15s ease, color .15s ease;
+    }
+    html.dark-mode .theme-switch button {
+      color: #e4e6e6;
+    }
+    .theme-switch button:hover {
+      background: rgba(28, 32, 34, .08);
+    }
+    html.dark-mode .theme-switch button:hover {
+      background: rgba(244, 245, 245, .12);
+    }
+    .theme-switch button:focus-visible {
+      outline: 2px solid #51a8ff;
+      outline-offset: 1px;
+    }
+    .theme-switch button[aria-pressed="true"] {
+      background: #1c2022;
+      color: #f0f1f1;
+    }
+    html.dark-mode .theme-switch button[aria-pressed="true"] {
+      background: #f0f1f1;
+      color: #080a0b;
+    }
   </style>
 </head>
 <body>
   <div id="swagger-ui"></div>
+
+  <div class="theme-switch" role="group" aria-label="Тема оформления">
+    <button type="button" data-theme="light">Светлая</button>
+    <button type="button" data-theme="dark">Тёмная</button>
+    <button type="button" data-theme="auto">Авто</button>
+  </div>
 
   <script src="./swagger-ui-bundle.js" charset="UTF-8"></script>
   <script src="./swagger-ui-standalone-preset.js" charset="UTF-8"></script>
@@ -43,6 +135,39 @@
         layout: 'StandaloneLayout'
       });
     };
+  </script>
+  <script>
+    (function () {
+      var st = window.__swaggerTheme;
+      var btns = document.querySelectorAll('.theme-switch button');
+      function sync() {
+        btns.forEach(function (b) {
+          b.setAttribute('aria-pressed', b.dataset.theme === st.mode ? 'true' : 'false');
+        });
+      }
+      sync();
+      btns.forEach(function (b) {
+        b.addEventListener('click', function () {
+          st.mode = b.dataset.theme;
+          st.apply(st.mode);
+          sync();
+          try { localStorage.setItem('swagger-theme', st.mode); } catch (e) {}
+        });
+      });
+      // Swagger UI's built-in toggle re-applies the OS preference once its
+      // topbar mounts, which would clobber a persisted manual choice.
+      // Re-assert our mode the moment that element appears, then stop watching.
+      var reasserted = false;
+      var obs = new MutationObserver(function () {
+        if (!reasserted && document.querySelector('.dark-mode-toggle')) {
+          reasserted = true;
+          st.apply(st.mode);
+          obs.disconnect();
+        }
+      });
+      obs.observe(document.body, { childList: true, subtree: true });
+      setTimeout(function () { obs.disconnect(); }, 15000);
+    })();
   </script>
 </body>
 </html>
