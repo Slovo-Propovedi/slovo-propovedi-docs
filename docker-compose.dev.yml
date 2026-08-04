@@ -1,0 +1,15 @@
+# DEV ONLY — local editing environment for openAPI.yaml.
+# Run with: docker compose -f docker-compose.dev.yml up --build
+# This service is NOT part of the production image (repo root Dockerfile)
+# and must never be deployed. It mounts ./openAPI.yaml read-write.
+services:
+  openapi-editor:
+    build:
+      context: ./editor
+    ports:
+      - "127.0.0.1:8081:8081"
+    environment:
+      SPEC_PATH: /spec/openAPI.yaml
+    volumes:
+      - ./openAPI.yaml:/spec/openAPI.yaml
+    restart: "no"

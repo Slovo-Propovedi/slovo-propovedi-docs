@@ -6,6 +6,11 @@ The service is a fully static nginx container: it serves the Swagger UI document
 `openAPI.yaml` specification file. It is **independent** of the admin backend — no Postgres, MinIO,
 or backend containers are required to run it.
 
+## Makefile shortcuts
+
+Команды из этого README обёрнуты в `Makefile` — см. `make help` для полного списка
+целей (dev-редактор, прод-сборка, запуск, остановка).
+
 ## What it serves
 
 | Endpoint        | Description                                |
@@ -53,6 +58,52 @@ curl -s http://localhost:8080/openAPI.yaml | head
    ```
 
 3. Restart the container with the new image.
+
+## Локальный редактор OpenAPI (только для разработки)
+
+Для удобного редактирования `openAPI.yaml` (вместо правки файла вручную) есть отдельный
+dev-контейнер: официальный Swagger Editor v5 + кнопки **Load from disk** и **Save to disk**.
+Он **не** входит в прод-образ (см. `Dockerfile`) и существует только локально.
+
+Самый простой способ запустить редактор — `make`:
+
+```bash
+make dev-up
+```
+
+Команда собирает и запускает dev-контейнер, **ждёт, пока редактор станет готовым**, и
+**автоматически открывает его в браузере** по адресу <http://localhost:8081/> (в
+headless-окружениях без браузера она просто печатает сообщение о готовности).
+Редактор автоматически загрузит текущий `openAPI.yaml`.
+Кнопка **Save to disk** записывает содержимое редактора обратно в `openAPI.yaml` на диске
+(файл примонтирован как том). После сохранения проверьте diff и закоммитьте:
+
+```bash
+git diff openAPI.yaml
+git add openAPI.yaml && git commit
+```
+
+Если браузер не открылся сам (или вы его закрыли) — откройте вручную:
+
+```bash
+make dev-open
+```
+
+Остановить dev-редактор:
+
+```bash
+make dev-down
+```
+
+Если предпочитаете сырые команды: под капотом `make dev-up` — это просто
+`docker compose -f docker-compose.dev.yml up --build`.
+
+Продакшен-контейнер (Swagger UI на `:8080`) этим не затрагивается.
+
+Изменения `openAPI.yaml` вне редактора (`git pull`, переключение веток и т.п.) идут через атомарную
+замену файла: работающий контейнер держит старый inode и отдаёт старую версию до перезапуска.
+Перезапустите dev-контейнер: `make dev-restart` (или `make dev-down && make dev-up`).
+Кнопка **Save to disk** не затронута — она пишет в тот же примонтированный файл.
 
 ## Repository layout
 

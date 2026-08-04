@@ -1,0 +1,4 @@
+# DEV ONLY — keep the editor image build context lean.
+# A locally-run `npm install` creates editor/node_modules; it must never
+# bloat the build context sent to Docker.
+node_modules
