@@ -895,13 +895,16 @@ components:
         - status
     SignInRequestDto:
       type: object
+      additionalProperties: false
       properties:
-        email:
+        username:
           type: string
+          description: Имя пользователя для входа
+          example: admin
         password:
           type: string
       required:
-        - email
+        - username
         - password
     UserResponse:
       type: object
@@ -911,11 +914,15 @@ components:
           type: string
         name:
           type: string
+        username:
+          type: string
+          description: Имя пользователя для входа в систему
         email:
           type: string
       required:
         - id
         - name
+        - username
         - email
     AuthResponse:
       type: object
