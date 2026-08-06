@@ -119,6 +119,8 @@ paths:
                 $ref: '#/components/schemas/SectionEntity'
       tags:
         - Sections
+      security:
+        - bearer: []
     get:
       operationId: SectionController_findAll
       summary: Получить все разделы
@@ -177,6 +179,8 @@ paths:
                 $ref: '#/components/schemas/SectionEntity'
       tags:
         - Sections
+      security:
+        - bearer: []
     delete:
       operationId: SectionController_remove
       summary: Удалить раздел
@@ -196,6 +200,8 @@ paths:
                 $ref: '#/components/schemas/StatusSectionsResponse'
       tags:
         - Sections
+      security:
+        - bearer: []
   /playlists:
     post:
       operationId: PlaylistController_create
@@ -216,6 +222,8 @@ paths:
                 $ref: '#/components/schemas/PlaylistEntity'
       tags:
         - Playlists
+      security:
+        - bearer: []
     get:
       operationId: PlaylistController_findAll
       summary: Получить все плейлисты
@@ -274,6 +282,8 @@ paths:
                 $ref: '#/components/schemas/PlaylistEntity'
       tags:
         - Playlists
+      security:
+        - bearer: []
     delete:
       operationId: PlaylistController_remove
       summary: Удалить плейлист
@@ -293,6 +303,8 @@ paths:
                 $ref: '#/components/schemas/StatusPlaylistResponse'
       tags:
         - Playlists
+      security:
+        - bearer: []
   /sermons:
     post:
       operationId: SermonController_create
@@ -313,6 +325,8 @@ paths:
                 $ref: '#/components/schemas/SermonEntity'
       tags:
         - Sermons
+      security:
+        - bearer: []
     get:
       operationId: SermonController_findAll
       summary: Получить список всех проповедей
@@ -359,8 +373,6 @@ paths:
                 $ref: '#/components/schemas/StreamUrlResponse'
       tags:
         - Sermons
-      security:
-        - bearer: []
   /sermons/{id}:
     get:
       operationId: SermonController_findOne
@@ -406,6 +418,8 @@ paths:
                 $ref: '#/components/schemas/StatusSermonResponse'
       tags:
         - Sermons
+      security:
+        - bearer: []
     delete:
       operationId: SermonController_remove
       summary: Удалить проповедь
@@ -425,6 +439,8 @@ paths:
                 $ref: '#/components/schemas/StatusSermonResponse'
       tags:
         - Sermons
+      security:
+        - bearer: []
   /auth/login:
     post:
       operationId: AuthController_signIn
@@ -481,6 +497,8 @@ paths:
                 $ref: '#/components/schemas/UserResponse'
       tags:
         - Auth
+      security:
+        - bearer: []
 components:
   securitySchemes:
     bearer:
