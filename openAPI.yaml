@@ -779,7 +779,7 @@ components:
         sermons:
           type: array
           items:
-            $ref: '#/components/schemas/SermonEntity'
+            $ref: '#/components/schemas/PlaylistSermon'
       required:
         - id
         - title
