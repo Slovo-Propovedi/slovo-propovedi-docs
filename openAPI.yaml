@@ -610,13 +610,51 @@ components:
         playlists:
           type: array
           items:
-            $ref: '#/components/schemas/PlaylistEntity'
+            $ref: '#/components/schemas/SectionPlaylist'
       required:
         - id
         - title
         - itemsSize
         - transform
         - playlists
+    SectionRef:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+      required:
+        - id
+        - title
+    SectionPlaylist:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        artwork:
+          type: string
+        sections:
+          type: array
+          items:
+            $ref: '#/components/schemas/SectionRef'
+        sermons:
+          type: array
+          items:
+            $ref: '#/components/schemas/SermonEntity'
+      required:
+        - id
+        - title
+        - description
+        - artwork
+        - sections
+        - sermons
     SermonEntity:
       type: object
       additionalProperties: false
