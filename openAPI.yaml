@@ -49,6 +49,19 @@ paths:
         - Files
       security:
         - bearer: []
+    get:
+      operationId: getFiles
+      summary: List image files
+      description: Returns a list of all image files in storage (for cover reuse feature)
+      tags:
+        - files
+      responses:
+        '200':
+          description: List of image files
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AllFilesResponse'
   /files/{fileName}/stream-url:
     get:
       operationId: AppController_getStreamUrl
@@ -134,6 +147,29 @@ paths:
                 $ref: '#/components/schemas/AllSectionsResponse'
       tags:
         - Sections
+  /section/reorder:
+    patch:
+      operationId: reorderSections
+      summary: Изменить порядок разделов
+      description: Принимает список id разделов в новом порядке и обновляет позиции
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReorderSectionsDto'
+      responses:
+        '200':
+          description: Порядок разделов обновлён
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatusSectionsResponse'
+      tags:
+        - section
+      security:
+        - bearer: []
   /section/{id}:
     get:
       operationId: SectionController_findOne
@@ -200,6 +236,35 @@ paths:
                 $ref: '#/components/schemas/StatusSectionsResponse'
       tags:
         - Sections
+      security:
+        - bearer: []
+  /section/{id}/playlists/reorder:
+    patch:
+      operationId: reorderPlaylistsInSection
+      summary: Изменить порядок плейлистов в разделе
+      description: Принимает список id плейлистов в новом порядке и обновляет их позиции внутри раздела
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReorderPlaylistsDto'
+      responses:
+        '200':
+          description: Порядок плейлистов в разделе обновлён
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatusSectionsResponse'
+      tags:
+        - section
       security:
         - bearer: []
   /playlists:
@@ -303,6 +368,35 @@ paths:
                 $ref: '#/components/schemas/StatusPlaylistResponse'
       tags:
         - Playlists
+      security:
+        - bearer: []
+  /playlists/{id}/sermons/reorder:
+    patch:
+      operationId: reorderSermonsInPlaylist
+      summary: Изменить порядок проповедей в плейлисте
+      description: Принимает список id проповедей в новом порядке и обновляет их позиции внутри плейлиста
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReorderSermonsDto'
+      responses:
+        '200':
+          description: Порядок проповедей в плейлисте обновлён
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatusPlaylistResponse'
+      tags:
+        - playlists
       security:
         - bearer: []
   /sermons:
@@ -533,6 +627,37 @@ components:
       required:
         - fileName
         - fileUrl
+    FileMetadataDto:
+      type: object
+      properties:
+        fileName:
+          type: string
+        fileUrl:
+          type: string
+        size:
+          type: integer
+          format: int64
+          nullable: true
+        lastModified:
+          type: string
+          format: date-time
+          nullable: true
+      required:
+        - fileName
+        - fileUrl
+
+    AllFilesResponse:
+      type: object
+      properties:
+        files:
+          type: array
+          items:
+            $ref: '#/components/schemas/FileMetadataDto'
+        count:
+          type: integer
+      required:
+        - files
+        - count
     CreateSectionDto:
       type: object
       properties:
@@ -579,6 +704,9 @@ components:
         description:
           type: string
           nullable: true
+        # Global order of sections (drag-and-drop reordering).
+        position:
+          type: integer
         itemsSize:
           type: string
           enum:
@@ -617,6 +745,7 @@ components:
         - itemsSize
         - transform
         - playlists
+        - position
     SectionRef:
       type: object
       additionalProperties: false
@@ -640,6 +769,9 @@ components:
           type: string
         artwork:
           type: string
+        # Position of this playlist within the section that references it.
+        position:
+          type: integer
         sections:
           type: array
           items:
@@ -655,6 +787,7 @@ components:
         - artwork
         - sections
         - sermons
+        - position
     SermonEntity:
       type: object
       additionalProperties: false
@@ -710,6 +843,54 @@ components:
         - chapter
         - verse
         - playlists
+    PlaylistSermon:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        textFileUrl:
+          type: string
+          nullable: true
+        audioUrl:
+          type: string
+          nullable: true
+        youtubeUrl:
+          type: string
+          nullable: true
+        artist:
+          type: string
+        artwork:
+          type: string
+        book:
+          type: string
+          nullable: true
+        chapter:
+          type: integer
+          nullable: true
+        verse:
+          oneOf:
+            - type: integer
+            - type: array
+              items:
+                type: integer
+              minItems: 2
+              maxItems: 2
+          nullable: true
+        # Position of this sermon within the playlist that references it.
+        position:
+          type: integer
+      required:
+        - id
+        - title
+        - description
+        - artist
+        - artwork
+        - position
     PlaylistEntity:
       type: object
       additionalProperties: false
@@ -729,7 +910,7 @@ components:
         sermons:
           type: array
           items:
-            $ref: '#/components/schemas/SermonEntity'
+            $ref: '#/components/schemas/PlaylistSermon'
       required:
         - id
         - title
@@ -848,6 +1029,36 @@ components:
           type: string
       required:
         - status
+    ReorderSectionsDto:
+      type: object
+      properties:
+        ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+      required:
+        - ids
+    ReorderSermonsDto:
+      type: object
+      properties:
+        sermonIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+      required:
+        - sermonIds
+    ReorderPlaylistsDto:
+      type: object
+      properties:
+        playlistIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+      required:
+        - playlistIds
     CreateSermonDto:
       type: object
       properties:
