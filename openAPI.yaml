@@ -887,6 +887,19 @@ components:
         # Position of this sermon within the playlist that references it.
         position:
           type: integer
+        playlists:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            properties:
+              id:
+                type: string
+              title:
+                type: string
+            required:
+              - id
+              - title
       required:
         - id
         - title
@@ -894,6 +907,7 @@ components:
         - artist
         - artwork
         - position
+        - playlists
     PlaylistEntity:
       type: object
       additionalProperties: false

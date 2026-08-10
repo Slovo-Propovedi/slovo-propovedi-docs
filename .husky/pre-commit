@@ -1,0 +1,9 @@
+#!/usr/bin/env sh
+
+# Block commits when openAPI.yaml is not valid YAML.
+# A non-zero exit from the validator aborts the commit.
+
+set -e
+
+echo "Validating openAPI.yaml..."
+npm run validate:openapi

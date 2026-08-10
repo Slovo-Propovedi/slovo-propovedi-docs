@@ -1,0 +1,13 @@
+{
+  "name": "slovo-propovedi-docs",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "prepare": "husky",
+    "validate:openapi": "node scripts/validate-openapi-yaml.mjs"
+  },
+  "devDependencies": {
+    "husky": "^9.1.7",
+    "js-yaml": "^4.1.0"
+  }
+}
