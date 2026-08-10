@@ -25,8 +25,8 @@ paths:
   /files:
     post:
       operationId: AppController_uploadFile
-      summary: Загрузить файл (изображение, аудио MP3, PDF, FB2)
-      description: Файл сохраняется в MinIO. Допустимые форматы: JPEG, PNG, WebP (изображения), MP3 (аудио), PDF, FB2 (документы).
+      summary: "Загрузить файл (изображение, аудио MP3, PDF, FB2)"
+      description: "Файл сохраняется в MinIO. Допустимые форматы: JPEG, PNG, WebP (изображения), MP3 (аудио), PDF, FB2 (документы)."
       parameters: []
       requestBody:
         required: true
@@ -38,7 +38,7 @@ paths:
                 file:
                   type: string
                   format: binary
-                  description: Допустимые форматы — JPEG, PNG, WebP, MP3, PDF, FB2. Другие форматы будут отклонены.
+                  description: "Допустимые форматы — JPEG, PNG, WebP, MP3, PDF, FB2. Другие форматы будут отклонены."
       responses:
         '200':
           description: Файл успешно загружен
@@ -53,7 +53,7 @@ paths:
     get:
       operationId: getFiles
       summary: List image files
-      description: Returns a list of all image files in storage (for cover reuse feature)
+      description: "Returns a list of all image files in storage (for cover reuse feature)"
       tags:
         - files
       responses:
@@ -193,7 +193,7 @@ paths:
         - Sections
     patch:
       operationId: SectionController_update
-      summary: Обновить раздел (включая связанные плейлисты)
+      summary: "Обновить раздел (включая связанные плейлисты)"
       parameters:
         - name: id
           required: true
@@ -306,7 +306,7 @@ paths:
   /playlists/{id}:
     get:
       operationId: PlaylistController_findOne
-      summary: Получить плейлист по ID (с проповедями)
+      summary: "Получить плейлист по ID (с проповедями)"
       parameters:
         - name: id
           required: true
