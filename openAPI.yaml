@@ -25,8 +25,8 @@ paths:
   /files:
     post:
       operationId: AppController_uploadFile
-      summary: Загрузить файл (изображение или аудио MP3)
-      description: Файл сохраняется в MinIO. Допустимые форматы: JPEG, PNG, WebP (изображения), MP3 (аудио).
+      summary: Загрузить файл (изображение, аудио MP3, PDF, FB2)
+      description: Файл сохраняется в MinIO. Допустимые форматы: JPEG, PNG, WebP (изображения), MP3 (аудио), PDF, FB2 (документы).
       parameters: []
       requestBody:
         required: true
@@ -38,7 +38,7 @@ paths:
                 file:
                   type: string
                   format: binary
-                  description: Допустимые форматы — JPEG, PNG, WebP, MP3. Другие форматы будут отклонены.
+                  description: Допустимые форматы — JPEG, PNG, WebP, MP3, PDF, FB2. Другие форматы будут отклонены.
       responses:
         '200':
           description: Файл успешно загружен
