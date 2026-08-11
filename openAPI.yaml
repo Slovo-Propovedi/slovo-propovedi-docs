@@ -668,6 +668,7 @@ components:
           type: string
         description:
           type: string
+          nullable: true
         itemsSize:
           type: string
           enum:
@@ -677,6 +678,7 @@ components:
             - xLarge
         itemsRows:
           type: number
+          nullable: true
         transform:
           type: string
           enum:
@@ -697,6 +699,8 @@ components:
         - title
         - itemsSize
         - transform
+        - description
+        - itemsRows
     SectionEntity:
       type: object
       additionalProperties: false
@@ -965,6 +969,7 @@ components:
           type: string
         description:
           type: string
+          nullable: true
         playlistsIds:
           type: array
           items:
@@ -978,6 +983,7 @@ components:
             - xLarge
         itemsRows:
           type: number
+          nullable: true
         transform:
           type: string
           enum:
@@ -994,6 +1000,16 @@ components:
             - bothOnAndUnder
         borderRadius:
           type: boolean
+      required:
+        - title
+        - description
+        - playlistsIds
+        - itemsSize
+        - itemsRows
+        - transform
+        - isDescriptionTitleOnSlideLarge
+        - whereIsSlideTitleLocated
+        - borderRadius
     StatusSectionsResponse:
       type: object
       additionalProperties: false
@@ -1049,6 +1065,11 @@ components:
           type: array
           items:
             type: string
+      required:
+        - title
+        - description
+        - artwork
+        - sermonsIds
     StatusPlaylistResponse:
       type: object
       additionalProperties: false
@@ -1096,10 +1117,13 @@ components:
           type: string
         textFileUrl:
           type: string
+          nullable: true
         audioUrl:
           type: string
+          nullable: true
         youtubeUrl:
           type: string
+          nullable: true
         artist:
           type: string
         artwork:
@@ -1110,6 +1134,7 @@ components:
           example: Genesis
         chapter:
           type: number
+          nullable: true
         verse:
           oneOf:
             - type: integer
@@ -1118,6 +1143,7 @@ components:
                 type: integer
               minItems: 2
               maxItems: 2
+          nullable: true
         playlistsIds:
           type: array
           items:
@@ -1128,6 +1154,11 @@ components:
         - artist
         - artwork
         - book
+        - textFileUrl
+        - audioUrl
+        - youtubeUrl
+        - chapter
+        - verse
     AllSermonsResponse:
       type: object
       additionalProperties: false
@@ -1155,10 +1186,13 @@ components:
           type: string
         textFileUrl:
           type: string
+          nullable: true
         audioUrl:
           type: string
+          nullable: true
         youtubeUrl:
           type: string
+          nullable: true
         artist:
           type: string
         artwork:
@@ -1169,6 +1203,7 @@ components:
           example: Genesis
         chapter:
           type: number
+          nullable: true
         verse:
           oneOf:
             - type: integer
@@ -1177,10 +1212,23 @@ components:
                 type: integer
               minItems: 2
               maxItems: 2
+          nullable: true
         playlistsIds:
           type: array
           items:
             type: string
+      required:
+        - title
+        - description
+        - textFileUrl
+        - audioUrl
+        - youtubeUrl
+        - artist
+        - artwork
+        - book
+        - chapter
+        - verse
+        - playlistsIds
     StatusSermonResponse:
       type: object
       additionalProperties: false
