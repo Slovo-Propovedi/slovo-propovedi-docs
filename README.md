@@ -131,6 +131,7 @@ git push origin v1.0.0
 | `VPS_SSH_PRIVATE_KEY` | SSH private key (ed25519) for root access to the VPS |
 | `VPS_HOST` | VPS hostname or IP (e.g. `92.63.103.147`) |
 | `VPS_SSH_USER` | SSH user on the VPS (`root`) |
+| `ACME_EMAIL` | Email for Let's Encrypt certificates (required for first deploy to a fresh VPS; not needed if Traefik is already running) |
 
 ### VPS prerequisites
 

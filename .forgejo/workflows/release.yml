@@ -67,7 +67,8 @@ jobs:
           VPS_HOST: ${{ secrets.VPS_HOST }}
           VPS_SSH_USER: ${{ secrets.VPS_SSH_USER }}
           DEPLOY_TAG: ${{ github.ref_name }}
+          ACME_EMAIL: ${{ secrets.ACME_EMAIL }}
         run: |
           scp scripts/vps-deploy.sh "$VPS_SSH_USER@$VPS_HOST:/tmp/vps-deploy.sh"
           ssh "$VPS_SSH_USER@$VPS_HOST" \
-            "chmod +x /tmp/vps-deploy.sh && DEPLOY_TAG='$DEPLOY_TAG' bash /tmp/vps-deploy.sh"
+            "chmod +x /tmp/vps-deploy.sh && DEPLOY_TAG='$DEPLOY_TAG' ACME_EMAIL='$ACME_EMAIL' bash /tmp/vps-deploy.sh"

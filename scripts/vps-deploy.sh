@@ -32,6 +32,9 @@ TRAEFIK_NETWORK="${TRAEFIK_NETWORK:-traefik}"
 MEMORY_LIMIT="${MEMORY_LIMIT:-64m}"
 STOP_GRACE="${STOP_GRACE:-3}"
 TRAEFIK_SERVICE="${TRAEFIK_SERVICE:-slovo-traefik.service}"
+ACME_EMAIL="${ACME_EMAIL:-}"
+TRAEFIK_IMAGE="${TRAEFIK_IMAGE:-traefik:v3.4}"
+TRAEFIK_BASE_PATH="${TRAEFIK_BASE_PATH:-/slovo/traefik}"
 
 # --- Banner ---
 echo "==============================================================="
@@ -85,26 +88,122 @@ if ! docker network inspect "$TRAEFIK_NETWORK" >/dev/null 2>&1; then
 fi
 echo "  traefik network: OK ($TRAEFIK_NETWORK)"
 
-# Traefik service — must be running (TLS termination, hostname routing, ACME certs)
+# Traefik service — auto-provision if missing
 if ! systemctl is-active --quiet "$TRAEFIK_SERVICE" 2>/dev/null; then
-  echo "ERROR: $TRAEFIK_SERVICE is not active."
-  echo ""
-  echo "       Traefik is required for:"
-  echo "         - TLS termination (HTTPS)"
-  echo "         - Hostname routing ($DOCS_HOSTNAME)"
-  echo "         - Let's Encrypt certificate management"
-  echo ""
-  echo "       To set up Traefik, use the slovo-propovedi-playbook:"
-  echo "         git clone https://git.lightnode.ru/Slovo_Propovedi/slovo-propovedi-playbook.git"
-  echo "         cd slovo-propovedi-playbook"
-  echo "         # Configure inventory + host_vars with your domain"
-  echo "         just setup-traefik"
-  echo ""
-  echo "       If Traefik is running under a different service name,"
-  echo "       set TRAEFIK_SERVICE=<name> and re-run this deploy."
-  exit 1
+  echo "  Traefik ($TRAEFIK_SERVICE): missing -> provisioning..."
+
+  # ACME email is required for Let's Encrypt certificate registration
+  if [ -z "$ACME_EMAIL" ]; then
+    echo "ERROR: Traefik is not running and ACME_EMAIL is not set."
+    echo ""
+    echo "       To auto-provision Traefik, provide your Let's Encrypt email:"
+    echo "         ACME_EMAIL=you@example.com bash /tmp/vps-deploy.sh"
+    echo ""
+    echo "       In the Forgejo workflow, add ACME_EMAIL as a repo secret."
+    echo ""
+    echo "       If Traefik is already running under a different service name,"
+    echo "       set TRAEFIK_SERVICE=<name> and re-run this deploy."
+    exit 1
+  fi
+
+  # Create Traefik directories
+  mkdir -p "$TRAEFIK_BASE_PATH/config" "$TRAEFIK_BASE_PATH/acme"
+
+  # Write Traefik static configuration
+  cat > "$TRAEFIK_BASE_PATH/config/traefik.yml" <<TRAEFIK_YML
+entryPoints:
+  web:
+    address: ":80"
+    http:
+      redirections:
+        entryPoint:
+          to: web-secure
+          scheme: https
+  web-secure:
+    address: ":443"
+
+certificatesResolvers:
+  default:
+    acme:
+      email: $ACME_EMAIL
+      storage: /etc/traefik/acme/acme.json
+      httpChallenge:
+        entryPoint: web
+
+providers:
+  docker:
+    endpoint: unix:///var/run/docker.sock
+    exposedByDefault: false
+    network: traefik
+
+log:
+  level: INFO
+TRAEFIK_YML
+
+  # ACME storage file (Traefik requires 600 permissions)
+  touch "$TRAEFIK_BASE_PATH/acme/acme.json"
+  chmod 600 "$TRAEFIK_BASE_PATH/acme/acme.json"
+
+  # Pull Traefik image
+  echo "  Pulling $TRAEFIK_IMAGE..."
+  docker pull "$TRAEFIK_IMAGE"
+
+  # Write Traefik systemd service
+  cat > "/etc/systemd/system/$TRAEFIK_SERVICE" <<TRAEFIK_SVC
+[Unit]
+Description=slovo-traefik
+Requires=docker.service
+After=docker.service
+DefaultDependencies=no
+
+[Service]
+Type=simple
+Environment="HOME=/root"
+ExecStartPre=-/usr/bin/env sh -c '/usr/bin/env docker stop -t 30 slovo-traefik 2>/dev/null || true'
+ExecStartPre=-/usr/bin/env sh -c '/usr/bin/env docker rm slovo-traefik 2>/dev/null || true'
+ExecStartPre=/usr/bin/env docker create \\
+    --rm \\
+    --name=slovo-traefik \\
+    --log-driver=none \\
+    --publish=80:80 \\
+    --publish=443:443 \\
+    --mount type=bind,src=/var/run/docker.sock,dst=/var/run/docker.sock \\
+    --mount type=bind,src=$TRAEFIK_BASE_PATH/config,dst=/etc/traefik \\
+    --mount type=bind,src=$TRAEFIK_BASE_PATH/acme,dst=/etc/traefik/acme \\
+    --network=traefik \\
+    --label traefik.enable=false \\
+    $TRAEFIK_IMAGE
+ExecStart=/usr/bin/env docker start --attach slovo-traefik
+ExecStop=-/usr/bin/env sh -c '/usr/bin/env docker stop -t 30 slovo-traefik 2>/dev/null || true'
+Restart=always
+RestartSec=5
+SyslogIdentifier=slovo-traefik
+
+[Install]
+WantedBy=multi-user.target
+TRAEFIK_SVC
+
+  systemctl daemon-reload
+  systemctl enable --now "$TRAEFIK_SERVICE"
+
+  # Wait for Traefik to become active
+  echo "  Waiting for Traefik to start..."
+  for i in $(seq 1 15); do
+    if systemctl is-active --quiet "$TRAEFIK_SERVICE" 2>/dev/null; then
+      break
+    fi
+    sleep 2
+  done
+
+  if ! systemctl is-active --quiet "$TRAEFIK_SERVICE" 2>/dev/null; then
+    echo "ERROR: Traefik failed to start."
+    systemctl status "$TRAEFIK_SERVICE" --no-pager -l || true
+    exit 1
+  fi
+  echo "  Traefik: provisioned ($TRAEFIK_SERVICE active)"
+else
+  echo "  Traefik: OK ($TRAEFIK_SERVICE active)"
 fi
-echo "  Traefik: OK ($TRAEFIK_SERVICE active)"
 
 # --- 1. Create paths ---
 echo ">> Ensuring paths exist..."
