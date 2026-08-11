@@ -646,6 +646,8 @@ components:
       required:
         - fileName
         - fileUrl
+        - size
+        - lastModified
 
     AllFilesResponse:
       type: object
@@ -745,7 +747,9 @@ components:
       required:
         - id
         - title
+        - description
         - itemsSize
+        - itemsRows
         - transform
         - playlists
         - position
@@ -904,8 +908,14 @@ components:
         - id
         - title
         - description
+        - textFileUrl
+        - audioUrl
+        - youtubeUrl
         - artist
         - artwork
+        - book
+        - chapter
+        - verse
         - position
         - playlists
     PlaylistEntity:
@@ -1117,6 +1127,7 @@ components:
         - description
         - artist
         - artwork
+        - book
     AllSermonsResponse:
       type: object
       additionalProperties: false
