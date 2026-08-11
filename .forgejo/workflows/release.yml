@@ -68,7 +68,17 @@ jobs:
           VPS_SSH_USER: ${{ secrets.VPS_SSH_USER }}
           DEPLOY_TAG: ${{ github.ref_name }}
           ACME_EMAIL: ${{ secrets.ACME_EMAIL }}
+          DOCS_HOSTNAME: ${{ vars.DOCS_HOSTNAME }}
         run: |
-          scp scripts/vps-deploy.sh "$VPS_SSH_USER@$VPS_HOST:/tmp/vps-deploy.sh"
-          ssh "$VPS_SSH_USER@$VPS_HOST" \
-            "chmod +x /tmp/vps-deploy.sh && DEPLOY_TAG='$DEPLOY_TAG' ACME_EMAIL='$ACME_EMAIL' bash /tmp/vps-deploy.sh"
+          SSH_TARGET="$VPS_SSH_USER@$VPS_HOST"
+          # Transfer source code (runner already has the tagged checkout)
+          tar czf - --exclude='.git' . \
+            | ssh "$SSH_TARGET" "rm -rf /slovo/docs/container-src && mkdir -p /slovo/docs/container-src && tar xzf - -C /slovo/docs/container-src"
+          # Upload and run deploy script
+          scp scripts/vps-deploy.sh "$SSH_TARGET:/tmp/vps-deploy.sh"
+          ssh "$SSH_TARGET" \
+            "chmod +x /tmp/vps-deploy.sh && \
+             DEPLOY_TAG='$DEPLOY_TAG' \
+             ACME_EMAIL='$ACME_EMAIL' \
+             DOCS_HOSTNAME='$DOCS_HOSTNAME' \
+             bash /tmp/vps-deploy.sh"

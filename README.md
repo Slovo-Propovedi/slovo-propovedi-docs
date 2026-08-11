@@ -1,4 +1,4 @@
-# slovo-propovedi-docs
+# Docs service
 
 Standalone Swagger UI + OpenAPI spec service for the **Admin API — Слово.Проповеди**.
 
@@ -21,7 +21,7 @@ or backend containers are required to run it.
 ## Build the Docker image
 
 ```bash
-docker build -t slovo-propovedi-docs .
+docker build -t docs .
 ```
 
 The build downloads `swagger-ui-dist` (default `5.32.12`, overridable via the
@@ -30,13 +30,13 @@ and `nginx.conf` into a minimal `nginx:alpine` image. There is no Node.js runtim
 
 ```bash
 # With a specific Swagger UI version
-docker build --build-arg SWAGGER_UI_VERSION=5.32.12 -t slovo-propovedi-docs .
+docker build --build-arg SWAGGER_UI_VERSION=5.32.12 -t docs .
 ```
 
 ## Run it locally
 
 ```bash
-docker run --rm -p 8080:8080 slovo-propovedi-docs
+docker run --rm -p 8080:8080 docs
 ```
 
 Then open <http://localhost:8080/> to browse the API documentation.
@@ -50,11 +50,11 @@ curl -s http://localhost:8080/openAPI.yaml | head
 ## How to update the spec
 
 1. Edit `openAPI.yaml` (OpenAPI 3.0.3, servers: `http://localhost:3000` and
-   `https://api.slovo-propovedi.ru`).
+   `https://api.example.com`).
 2. Rebuild the image:
 
    ```bash
-   docker build -t slovo-propovedi-docs .
+   docker build -t docs .
    ```
 
 3. Restart the container with the new image.
@@ -115,9 +115,10 @@ Production deployment is fully automated via **Forgejo Actions**.
 2. Tag a release (`v*`) and push → the Release workflow:
    - Waits for CI to pass on the tagged commit.
    - SSHes into the VPS, uploads `scripts/vps-deploy.sh`, and runs it.
-   - The script clones/fetches the repo at the tagged version, builds the Docker
-     image on the VPS via `docker buildx`, writes the Traefik labels + systemd
-     unit, and restarts `slovo-docs.service`.
+   - The workflow transfers the source code to the VPS via `tar+ssh`, then runs
+     `scripts/vps-deploy.sh` which builds the Docker image on the VPS via
+     `docker buildx`, writes the Traefik labels + systemd unit, and restarts
+     `slovo-docs.service`.
 
 ```bash
 git tag v1.0.0
@@ -126,16 +127,26 @@ git push origin v1.0.0
 
 ### Required Forgejo secrets
 
+Settings → Actions → Secrets.
+
 | Secret | Description |
 | --- | --- |
 | `VPS_SSH_PRIVATE_KEY` | SSH private key (ed25519) for root access to the VPS |
-| `VPS_HOST` | VPS hostname or IP (e.g. `92.63.103.147`) |
+| `VPS_HOST` | VPS hostname or IP |
 | `VPS_SSH_USER` | SSH user on the VPS (`root`) |
 | `ACME_EMAIL` | Email for Let's Encrypt certificates (required for first deploy to a fresh VPS; not needed if Traefik is already running) |
 
+### Required Forgejo variables
+
+Settings → Actions → Variables.
+
+| Variable | Description |
+| --- | --- |
+| `DOCS_HOSTNAME` | Public hostname for the docs site (e.g. `docs.example.com`) |
+
 ### VPS prerequisites
 
-The deploy script assumes the VPS has already been provisioned by the `slovo-propovedi-playbook`:
+The deploy script assumes the VPS has already been provisioned by the provisioning playbook:
 
 - `slovo` system user exists
 - Docker buildx builder `slovo-constrained` exists

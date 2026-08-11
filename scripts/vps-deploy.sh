@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # =============================================================================
-# slovo-propovedi-docs — VPS Deployment Script
+# VPS Deployment Script
 # =============================================================================
 # Runs ON the VPS as root. Triggered by the Forgejo release workflow via SSH.
 # Replaces the former Ansible role `roles/custom/slovo-docs/`.
@@ -10,7 +10,7 @@ set -euo pipefail
 # Usage:   DEPLOY_TAG=v1.0.0 bash vps-deploy.sh
 #
 # Idempotent: safe to re-run. Handles both first deploy and updates.
-# Prerequisites (created by slovo-propovedi-playbook):
+# Prerequisites (created by the provisioning playbook):
 #   - `slovo` system user exists
 #   - Docker buildx builder `slovo-constrained` exists
 #   - Traefik reverse proxy is running (slovo-traefik.service)
@@ -18,8 +18,7 @@ set -euo pipefail
 
 # --- Configuration (override via env) ---
 DEPLOY_TAG="${DEPLOY_TAG:?ERROR: DEPLOY_TAG is required (e.g. v1.0.0)}"
-DOCS_HOSTNAME="${DOCS_HOSTNAME:-docs.slovo-propovedi.ru}"
-DOCS_REPO="${DOCS_REPO:-https://git.lightnode.ru/Slovo_Propovedi/slovo-propovedi-docs.git}"
+DOCS_HOSTNAME="${DOCS_HOSTNAME:?ERROR: DOCS_HOSTNAME is required (e.g. docs.example.com)}"
 BASE_PATH="${BASE_PATH:-/slovo/docs}"
 SRC_PATH="${SRC_PATH:-/slovo/docs/container-src}"
 BUILDER_NAME="${BUILDER_NAME:-slovo-constrained}"
@@ -38,7 +37,7 @@ TRAEFIK_BASE_PATH="${TRAEFIK_BASE_PATH:-/slovo/traefik}"
 
 # --- Banner ---
 echo "==============================================================="
-echo "  slovo-propovedi-docs deployment"
+echo "  VPS deployment"
 echo "  Tag:      $DEPLOY_TAG"
 echo "  Hostname: $DOCS_HOSTNAME"
 echo "==============================================================="
@@ -211,20 +210,15 @@ mkdir -p "$BASE_PATH" "$SRC_PATH"
 chown slovo:slovo "$BASE_PATH" "$SRC_PATH"
 chmod 0750 "$BASE_PATH" "$SRC_PATH"
 
-# --- 2. Clone / fetch repository ---
-git config --global --add safe.directory "$SRC_PATH" 2>/dev/null || true
-
-if [ ! -d "$SRC_PATH/.git" ]; then
-  echo ">> Cloning repository (first deploy)..."
-  rm -rf "$SRC_PATH"
-  mkdir -p "$SRC_PATH"
-  git clone "$DOCS_REPO" "$SRC_PATH"
+# --- 2. Verify source code ---
+# Source code is transferred by the Forgejo workflow (tar+ssh) before this
+# script runs. No git operations needed — the runner already checked out the tag.
+echo ">> Verifying source code at $SRC_PATH..."
+if [ ! -f "$SRC_PATH/Dockerfile" ]; then
+  echo "ERROR: No source code found at $SRC_PATH."
+  echo "       The workflow should transfer the code before running this script."
+  exit 1
 fi
-
-echo ">> Fetching and checking out tag $DEPLOY_TAG..."
-cd "$SRC_PATH"
-git fetch --tags --force origin
-git checkout --force "$DEPLOY_TAG"
 chown -R slovo:slovo "$SRC_PATH"
 
 # --- 3. Write Traefik labels ---
