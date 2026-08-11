@@ -23,12 +23,15 @@ DOCS_REPO="${DOCS_REPO:-https://git.lightnode.ru/Slovo_Propovedi/slovo-propovedi
 BASE_PATH="${BASE_PATH:-/slovo/docs}"
 SRC_PATH="${SRC_PATH:-/slovo/docs/container-src}"
 BUILDER_NAME="${BUILDER_NAME:-slovo-constrained}"
+BUILDX_MEMORY="${BUILDX_MEMORY:-1g}"
+BUILDX_CPU_QUOTA="${BUILDX_CPU_QUOTA:-80000}"
 IMAGE_NAME="${IMAGE_NAME:-slovo-docs:latest}"
 CONTAINER_PORT="${CONTAINER_PORT:-8080}"
 CONTAINER_NETWORK="${CONTAINER_NETWORK:-slovo-docs}"
 TRAEFIK_NETWORK="${TRAEFIK_NETWORK:-traefik}"
 MEMORY_LIMIT="${MEMORY_LIMIT:-64m}"
 STOP_GRACE="${STOP_GRACE:-3}"
+TRAEFIK_SERVICE="${TRAEFIK_SERVICE:-slovo-traefik.service}"
 
 # --- Banner ---
 echo "==============================================================="
@@ -37,26 +40,58 @@ echo "  Tag:      $DEPLOY_TAG"
 echo "  Hostname: $DOCS_HOSTNAME"
 echo "==============================================================="
 
-# --- Validate prerequisites ---
-echo ">> Checking prerequisites..."
+# --- Ensure prerequisites ---
+echo ">> Ensuring prerequisites..."
 
-if ! id -u slovo >/dev/null 2>&1; then
-  echo "ERROR: User 'slovo' does not exist on this system."
-  echo "Run the slovo-propovedi-playbook (slovo-base role) first."
+# Docker — must be pre-installed (can't auto-install from a deploy script)
+if ! command -v docker >/dev/null 2>&1; then
+  echo "ERROR: Docker is not installed or not in PATH."
+  echo "       Install Docker Engine: https://docs.docker.com/engine/install/"
   exit 1
 fi
+echo "  Docker: OK"
 
+# slovo user + group — create if missing (matches playbook slovo-base role)
+if ! getent group slovo >/dev/null 2>&1; then
+  echo "  slovo group: missing -> creating..."
+  groupadd --system slovo
+fi
+if ! id -u slovo >/dev/null 2>&1; then
+  echo "  slovo user: missing -> creating..."
+  useradd --system --no-create-home --shell /sbin/nologin --home /slovo --gid slovo slovo
+fi
 SLOVO_UID=$(id -u slovo)
 SLOVO_GID=$(id -g slovo)
+echo "  slovo user: OK (uid=$SLOVO_UID, gid=$SLOVO_GID)"
 
+# buildx builder — create if missing (matches playbook slovo-buildx role)
 if ! docker buildx inspect "$BUILDER_NAME" >/dev/null 2>&1; then
-  echo "ERROR: Docker buildx builder '$BUILDER_NAME' does not exist."
-  echo "Run the slovo-propovedi-playbook (slovo-buildx role) first."
+  echo "  buildx builder '$BUILDER_NAME': missing -> creating..."
+  docker buildx create \
+    --name "$BUILDER_NAME" \
+    --driver docker-container \
+    --driver-opt memory="$BUILDX_MEMORY" \
+    --driver-opt cpu-quota="$BUILDX_CPU_QUOTA" \
+    --bootstrap
+fi
+echo "  buildx builder: OK ($BUILDER_NAME)"
+
+# traefik Docker network — create if missing
+if ! docker network inspect "$TRAEFIK_NETWORK" >/dev/null 2>&1; then
+  echo "  traefik network: missing -> creating..."
+  docker network create "$TRAEFIK_NETWORK"
+fi
+echo "  traefik network: OK ($TRAEFIK_NETWORK)"
+
+# Traefik service — must be running (can't auto-provision from a deploy script)
+if ! systemctl is-active --quiet "$TRAEFIK_SERVICE" 2>/dev/null; then
+  echo "ERROR: $TRAEFIK_SERVICE is not running."
+  echo "       Traefik is required for TLS termination and hostname routing."
+  echo "       Set it up via the slovo-propovedi-playbook:"
+  echo "         just setup-traefik"
   exit 1
 fi
-
-echo "  slovo uid:gid = $SLOVO_UID:$SLOVO_GID"
-echo "  buildx builder: $BUILDER_NAME"
+echo "  Traefik: OK ($TRAEFIK_SERVICE active)"
 
 # --- 1. Create paths ---
 echo ">> Ensuring paths exist..."
@@ -115,8 +150,8 @@ cat > /etc/systemd/system/slovo-docs.service <<EOF
 Description=slovo-docs
 Requires=docker.service
 After=docker.service
-Requires=slovo-traefik.service
-After=slovo-traefik.service
+Requires=$TRAEFIK_SERVICE
+After=$TRAEFIK_SERVICE
 DefaultDependencies=no
 
 [Service]
