@@ -82,3 +82,49 @@ jobs:
              ACME_EMAIL='$ACME_EMAIL' \
              DOCS_HOSTNAME='$DOCS_HOSTNAME' \
              bash /tmp/vps-deploy.sh"
+
+      - name: Extract changelog section
+        run: |
+          VERSION="${{ github.ref_name }}"
+          VERSION="${VERSION#v}"
+          awk -v target="## [$VERSION]" '
+            index($0, target) == 1 { found = 1; next }
+            found && $0 ~ /^## \[/ { exit }
+            found && $0 ~ /^\[.*\]: / { exit }
+            found { print }
+          ' CHANGELOG.md > release-body.md
+
+          if [ ! -s release-body.md ]; then
+            echo "::error::No changelog section found for v$VERSION in CHANGELOG.md"
+            exit 1
+          fi
+
+          echo "Extracted changelog for v$VERSION ($(wc -l < release-body.md) lines)"
+
+      - name: Create Forgejo Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          jq -n \
+            --arg tag "${{ github.ref_name }}" \
+            --arg name "${{ github.ref_name }}" \
+            --arg body "$(cat release-body.md)" \
+            '{tag_name: $tag, name: $name, body: $body}' > release.json
+
+          HTTP_CODE=$(curl -s -o release-response.json -w "%{http_code}" -X POST \
+            "${{ github.server_url }}/api/v1/repos/${{ github.repository }}/releases" \
+            -H "Authorization: token $GITHUB_TOKEN" \
+            -H "Content-Type: application/json" \
+            --data @release.json)
+
+          if [ "$HTTP_CODE" -ge 400 ]; then
+            echo "::error::Failed to create Forgejo Release (HTTP $HTTP_CODE)"
+            cat release-response.json
+            exit 1
+          fi
+
+          echo "Created Forgejo Release ${{ github.ref_name }} (HTTP $HTTP_CODE)"
+
+      - name: Cleanup
+        if: always()
+        run: rm -f release-body.md release.json release-response.json

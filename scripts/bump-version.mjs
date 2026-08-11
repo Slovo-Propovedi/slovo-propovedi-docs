@@ -62,6 +62,79 @@ openApi = openApi.replace(/^(\s*version:\s*)\d+\.\d+\.\d+/m, `$1${newVersion}`)
 writeFileSync(openApiPath, openApi)
 log('✓ Updated openAPI.yaml', GREEN)
 
+// 3. CHANGELOG.md — generate section from conventional commits
+const changelogPath = 'CHANGELOG.md'
+
+// Get commit messages since last version tag
+let commitMessages = []
+try {
+  const log = execSync(`git log v${currentVersion}..HEAD --format=%s --no-merges`, { encoding: 'utf-8' }).trim()
+  if (log) commitMessages = log.split('\n')
+} catch {
+  // No previous tag — no commits to categorize
+  commitMessages = []
+}
+
+// Categorize by conventional commit type
+const typeMap = {
+  feat: 'Added',
+  fix: 'Fixed',
+  refactor: 'Changed',
+  perf: 'Changed',
+}
+const categories = { Added: [], Changed: [], Fixed: [] }
+
+for (const msg of commitMessages) {
+  const match = msg.match(/^(\w+)(?:\(.+\))?:\s*(.+)/)
+  if (!match) continue
+  const [, type, description] = match
+  const category = typeMap[type]
+  if (!category) continue // skip: chore, ci, docs, style, test, build
+  const desc = description.charAt(0).toUpperCase() + description.slice(1)
+  categories[category].push(desc)
+}
+
+// Build section text
+const date = new Date().toISOString().slice(0, 10)
+const sectionLines = [`## [${newVersion}] - ${date}`]
+for (const [category, items] of Object.entries(categories)) {
+  if (items.length === 0) continue
+  sectionLines.push('', `### ${category}`, '')
+  for (const item of items) sectionLines.push(`- ${item}`)
+}
+const section = sectionLines.join('\n') + '\n'
+
+// Read existing CHANGELOG.md
+let changelog = readFileSync(changelogPath, 'utf-8')
+
+// Derive repo URL from git remote for link reference
+const remote = execSync('git remote get-url origin', { encoding: 'utf-8' }).trim()
+const repoUrl = remote
+  .replace(/^ssh:\/\/git@/, 'https://')
+  .replace(/^git@([^:]+):/, 'https://$1/')
+  .replace(/\.git$/, '')
+const linkRef = `[${newVersion}]: ${repoUrl}/src/tag/v${newVersion}`
+
+// Guard: version must not already exist in changelog
+if (changelog.includes(`## [${newVersion}]`)) {
+  exitError(`Version ${newVersion} already exists in CHANGELOG.md`)
+}
+
+// Insert section after the intro paragraph (after the semver.org line),
+// before the first existing version entry
+changelog = changelog.replace(
+  /(and this project adheres to \[Semantic Versioning\]\([^)]+\)\.\n)/,
+  `$1\n${section}`
+)
+
+// Insert link reference before the first existing link reference line
+if (!changelog.includes(`[${newVersion}]:`)) {
+  changelog = changelog.replace(/^(\[.+?\]:)/m, `${linkRef}\n$1`)
+}
+
+writeFileSync(changelogPath, changelog)
+log('✓ Updated CHANGELOG.md', GREEN)
+
 // --- Git operations ---
 log('\n→ Staging all changes...', YELLOW)
 execSync('git add -A', { cwd: process.cwd() })
