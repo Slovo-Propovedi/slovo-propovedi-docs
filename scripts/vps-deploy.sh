@@ -43,13 +43,15 @@ echo "==============================================================="
 # --- Ensure prerequisites ---
 echo ">> Ensuring prerequisites..."
 
-# Docker — must be pre-installed (can't auto-install from a deploy script)
+# Docker — auto-install if missing
 if ! command -v docker >/dev/null 2>&1; then
-  echo "ERROR: Docker is not installed or not in PATH."
-  echo "       Install Docker Engine: https://docs.docker.com/engine/install/"
-  exit 1
+  echo "  Docker: missing -> installing..."
+  curl -fsSL https://get.docker.com | sh
+  systemctl enable --now docker
+  echo "  Docker: installed"
+else
+  echo "  Docker: OK"
 fi
-echo "  Docker: OK"
 
 # slovo user + group — create if missing (matches playbook slovo-base role)
 if ! getent group slovo >/dev/null 2>&1; then
@@ -83,12 +85,23 @@ if ! docker network inspect "$TRAEFIK_NETWORK" >/dev/null 2>&1; then
 fi
 echo "  traefik network: OK ($TRAEFIK_NETWORK)"
 
-# Traefik service — must be running (can't auto-provision from a deploy script)
+# Traefik service — must be running (TLS termination, hostname routing, ACME certs)
 if ! systemctl is-active --quiet "$TRAEFIK_SERVICE" 2>/dev/null; then
-  echo "ERROR: $TRAEFIK_SERVICE is not running."
-  echo "       Traefik is required for TLS termination and hostname routing."
-  echo "       Set it up via the slovo-propovedi-playbook:"
+  echo "ERROR: $TRAEFIK_SERVICE is not active."
+  echo ""
+  echo "       Traefik is required for:"
+  echo "         - TLS termination (HTTPS)"
+  echo "         - Hostname routing ($DOCS_HOSTNAME)"
+  echo "         - Let's Encrypt certificate management"
+  echo ""
+  echo "       To set up Traefik, use the slovo-propovedi-playbook:"
+  echo "         git clone https://git.lightnode.ru/Slovo_Propovedi/slovo-propovedi-playbook.git"
+  echo "         cd slovo-propovedi-playbook"
+  echo "         # Configure inventory + host_vars with your domain"
   echo "         just setup-traefik"
+  echo ""
+  echo "       If Traefik is running under a different service name,"
+  echo "       set TRAEFIK_SERVICE=<name> and re-run this deploy."
   exit 1
 fi
 echo "  Traefik: OK ($TRAEFIK_SERVICE active)"
@@ -150,7 +163,7 @@ cat > /etc/systemd/system/slovo-docs.service <<EOF
 Description=slovo-docs
 Requires=docker.service
 After=docker.service
-Requires=$TRAEFIK_SERVICE
+Wants=$TRAEFIK_SERVICE
 After=$TRAEFIK_SERVICE
 DefaultDependencies=no
 
