@@ -105,6 +105,41 @@ make dev-down
 Перезапустите dev-контейнер: `make dev-restart` (или `make dev-down && make dev-up`).
 Кнопка **Save to disk** не затронута — она пишет в тот же примонтированный файл.
 
+## Deployment
+
+Production deployment is fully automated via **Forgejo Actions**.
+
+### How it works
+
+1. Push a commit to `main` → CI workflow validates `openAPI.yaml`.
+2. Tag a release (`v*`) and push → the Release workflow:
+   - Waits for CI to pass on the tagged commit.
+   - SSHes into the VPS, uploads `scripts/vps-deploy.sh`, and runs it.
+   - The script clones/fetches the repo at the tagged version, builds the Docker
+     image on the VPS via `docker buildx`, writes the Traefik labels + systemd
+     unit, and restarts `slovo-docs.service`.
+
+```bash
+git tag v1.0.0
+git push origin v1.0.0
+```
+
+### Required Forgejo secrets
+
+| Secret | Description |
+| --- | --- |
+| `VPS_SSH_PRIVATE_KEY` | SSH private key (ed25519) for root access to the VPS |
+| `VPS_HOST` | VPS hostname or IP (e.g. `92.63.103.147`) |
+| `VPS_SSH_USER` | SSH user on the VPS (`root`) |
+
+### VPS prerequisites
+
+The deploy script assumes the VPS has already been provisioned by the `slovo-propovedi-playbook`:
+
+- `slovo` system user exists
+- Docker buildx builder `slovo-constrained` exists
+- Traefik reverse proxy is running (`slovo-traefik.service`)
+
 ## Repository layout
 
 ```

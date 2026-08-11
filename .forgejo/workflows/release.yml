@@ -1,0 +1,60 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Wait for CI to pass on this commit
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -e
+          URL="${{ github.server_url }}/api/v1/repos/${{ github.repository }}/commits/${{ github.sha }}/status"
+
+          # Runner capacity is 2, so this job holding a runner slot while
+          # polling no longer starves the CI workflow of a runner to run on.
+          for i in $(seq 1 40); do
+            # Forgejo appends the triggering event to the context, e.g.
+            # "CI / validate (push)", so match by prefix rather than equality.
+            STATE=$(curl -s -H "Authorization: token $GITHUB_TOKEN" "$URL" | jq -r '.statuses[] | select(.context | startswith("CI / validate")) | .status' | head -1)
+
+            case "$STATE" in
+              success) echo "CI passed for ${{ github.sha }}"; exit 0 ;;
+              failure|error) echo "::error::CI did not pass for ${{ github.sha }} (status: $STATE). Refusing to deploy."; exit 1 ;;
+            esac
+
+            echo "Waiting for CI status on ${{ github.sha }} (attempt $i/40)..."
+            sleep 15
+          done
+
+          echo "::error::Timed out waiting for CI status on ${{ github.sha }}"
+          exit 1
+
+      - name: Setup SSH
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+        run: |
+          mkdir -p ~/.ssh
+          echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -H "$VPS_HOST" >> ~/.ssh/known_hosts 2>/dev/null
+
+      - name: Deploy to VPS
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_SSH_USER: ${{ secrets.VPS_SSH_USER }}
+          DEPLOY_TAG: ${{ github.ref_name }}
+        run: |
+          scp scripts/vps-deploy.sh "$VPS_SSH_USER@$VPS_HOST:/tmp/vps-deploy.sh"
+          ssh "$VPS_SSH_USER@$VPS_HOST" \
+            "chmod +x /tmp/vps-deploy.sh && DEPLOY_TAG='$DEPLOY_TAG' bash /tmp/vps-deploy.sh"
