@@ -13,6 +13,19 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Verify version consistency
+        run: |
+          TAG_VERSION="${{ github.ref_name }}"
+          # Strip optional 'v' prefix
+          TAG_VERSION="${TAG_VERSION#v}"
+          PKG_VERSION=$(node -p "require('./package.json').version")
+          if [ "$TAG_VERSION" != "$PKG_VERSION" ]; then
+            echo "::error::Tag version ($TAG_VERSION) does not match package.json version ($PKG_VERSION)"
+            echo "::error::Run 'npm run bump-version <version>' to create a consistent release"
+            exit 1
+          fi
+          echo "Version consistency check passed: $TAG_VERSION"
+
       - name: Wait for CI to pass on this commit
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

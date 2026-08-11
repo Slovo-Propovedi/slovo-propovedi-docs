@@ -1,0 +1,90 @@
+#!/usr/bin/env node
+
+import { readFileSync, writeFileSync } from 'node:fs'
+import { execSync } from 'node:child_process'
+
+const GREEN = '\x1b[32m'
+const RED = '\x1b[31m'
+const YELLOW = '\x1b[33m'
+const RESET = '\x1b[0m'
+
+const log = (message, color = '') => console.log(`${color}${message}${RESET}`)
+const exitError = (message) => {
+  log(message, RED)
+  process.exit(1)
+}
+
+// --- Parse argument ---
+const arg = process.argv[2]
+
+if (!arg) {
+  exitError('Usage: node scripts/bump-version.mjs <version|patch|minor|major>')
+}
+
+// Strip optional 'v' prefix (e.g. v1.2.3 → 1.2.3)
+const versionArg = arg.startsWith('v') ? arg.slice(1) : arg
+
+if (!/^\d+\.\d+\.\d+$/.test(versionArg) && !['patch', 'minor', 'major'].includes(versionArg)) {
+  exitError(`Invalid argument: "${arg}". Use X.Y.Z, patch, minor, or major.`)
+}
+
+// --- Read current version from package.json ---
+const pkgPath = 'package.json'
+const pkg = JSON.parse(readFileSync(pkgPath, 'utf-8'))
+const currentVersion = pkg.version
+
+// --- Calculate new version ---
+let newVersion
+
+if (/^\d+\.\d+\.\d+$/.test(versionArg)) {
+  newVersion = versionArg
+} else {
+  const [major, minor, patch] = currentVersion.split('.').map(Number)
+  const bumps = {
+    major: `${major + 1}.0.0`,
+    minor: `${major}.${minor + 1}.0`,
+    patch: `${major}.${minor}.${patch + 1}`,
+  }
+  newVersion = bumps[versionArg]
+}
+
+// --- Update files ---
+
+// 1. package.json
+pkg.version = newVersion
+writeFileSync(pkgPath, `${JSON.stringify(pkg, null, 2)}\n`)
+log('✓ Updated package.json', GREEN)
+
+// 2. openAPI.yaml — info.version (first `version:` field under `info:`, NOT the `openapi:` spec version)
+const openApiPath = 'openAPI.yaml'
+let openApi = readFileSync(openApiPath, 'utf-8')
+openApi = openApi.replace(/^(\s*version:\s*)\d+\.\d+\.\d+/m, `$1${newVersion}`)
+writeFileSync(openApiPath, openApi)
+log('✓ Updated openAPI.yaml', GREEN)
+
+// --- Git operations ---
+log('\n→ Staging all changes...', YELLOW)
+execSync('git add -A', { cwd: process.cwd() })
+
+log('→ Committing...', YELLOW)
+execSync(`git commit -s -m "chore: bump version to ${newVersion}"`, { cwd: process.cwd() })
+
+log('→ Tagging...', YELLOW)
+execSync(`git tag -a v${newVersion} -m "v${newVersion}"`, { cwd: process.cwd() })
+
+// Verify the tag actually landed: `git tag -a` has been observed to exit 0
+// without an error yet leave the ref missing.
+try {
+  execSync(`git rev-parse --verify -q v${newVersion}`, { cwd: process.cwd() })
+} catch {
+  exitError(`Tag v${newVersion} was not created despite 'git tag' reporting success. Run 'git tag -a v${newVersion} -m "v${newVersion}"' manually and verify with 'git tag -l'.`)
+}
+
+// --- Summary ---
+log('\n══════════════════════════════════════', GREEN)
+log('  Version bump complete!', GREEN)
+log(`  ${currentVersion} → ${newVersion}`, GREEN)
+log(`  Tag: v${newVersion}`, GREEN)
+log('══════════════════════════════════════', GREEN)
+log('  Reminder:  git push --tags origin main', YELLOW)
+log('══════════════════════════════════════\n', GREEN)

@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "prepare": "husky",
-    "validate:openapi": "node scripts/validate-openapi-yaml.mjs"
+    "validate:openapi": "node scripts/validate-openapi-yaml.mjs",
+    "bump-version": "node scripts/bump-version.mjs"
   },
   "devDependencies": {
     "husky": "^9.1.7",
