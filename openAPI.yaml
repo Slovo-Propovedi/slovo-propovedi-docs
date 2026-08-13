@@ -21,6 +21,8 @@ tags:
     description: Управление разделами
   - name: Playlists
     description: Управление плейлистами
+  - name: Users
+    description: Управление пользователями (админами)
 paths:
   /files:
     post:
@@ -601,6 +603,127 @@ paths:
         - Auth
       security:
         - bearer: []
+  /users:
+    get:
+      tags:
+        - Users
+      operationId: UsersController_findAll
+      security:
+        - bearer: []
+      responses:
+        '200':
+          description: Список пользователей
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/UserResponse'
+    post:
+      tags:
+        - Users
+      operationId: UsersController_create
+      security:
+        - bearer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateUserRequest'
+      responses:
+        '201':
+          description: Пользователь создан
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+  /users/{id}:
+    get:
+      tags:
+        - Users
+      operationId: UsersController_findOne
+      security:
+        - bearer: []
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Пользователь
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+    patch:
+      tags:
+        - Users
+      operationId: UsersController_update
+      security:
+        - bearer: []
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateUserRequest'
+      responses:
+        '200':
+          description: Пользователь обновлён
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+    delete:
+      tags:
+        - Users
+      operationId: UsersController_remove
+      security:
+        - bearer: []
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Пользователь удалён
+  /users/{id}/password:
+    patch:
+      tags:
+        - Users
+      operationId: UsersController_changePassword
+      security:
+        - bearer: []
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangePasswordRequest'
+      responses:
+        '204':
+          description: Пароль изменён
 components:
   securitySchemes:
     bearer:
@@ -1279,6 +1402,41 @@ components:
         - name
         - username
         - email
+    CreateUserRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - name
+        - email
+        - username
+        - password
+      properties:
+        name:
+          type: string
+        email:
+          type: string
+        username:
+          type: string
+        password:
+          type: string
+    UpdateUserRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        name:
+          type: string
+        email:
+          type: string
+        username:
+          type: string
+    ChangePasswordRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - password
+      properties:
+        password:
+          type: string
     AuthResponse:
       type: object
       additionalProperties: false
