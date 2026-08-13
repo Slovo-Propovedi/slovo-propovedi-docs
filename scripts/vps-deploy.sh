@@ -263,10 +263,8 @@ DefaultDependencies=no
 [Service]
 Type=simple
 Environment="HOME=/root"
-ExecStartPre=-/usr/bin/env sh -c '/usr/bin/env docker stop -t $STOP_GRACE slovo-docs 2>/dev/null || true'
-ExecStartPre=-/usr/bin/env sh -c '/usr/bin/env docker rm slovo-docs 2>/dev/null || true'
+ExecStartPre=-/usr/bin/env docker rm -f slovo-docs
 ExecStartPre=/usr/bin/env docker create \\
-    --rm \\
     --name=slovo-docs \\
     --log-driver=none \\
     --user=$SLOVO_UID:$SLOVO_GID \\
@@ -281,7 +279,7 @@ ExecStartPre=/usr/bin/env docker create \\
     $IMAGE_NAME
 ExecStartPre=/usr/bin/env docker network connect $TRAEFIK_NETWORK slovo-docs
 ExecStart=/usr/bin/env docker start --attach slovo-docs
-ExecStop=-/usr/bin/env sh -c '/usr/bin/env docker stop -t $STOP_GRACE slovo-docs 2>/dev/null || true'
+ExecStop=-/usr/bin/env docker stop -t $STOP_GRACE slovo-docs
 Restart=always
 RestartSec=30
 SyslogIdentifier=slovo-docs
