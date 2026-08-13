@@ -21,7 +21,7 @@ or backend containers are required to run it.
 ## Build the Docker image
 
 ```bash
-docker build -t docs .
+docker build -t slovo-propovedi-docs .
 ```
 
 The build downloads `swagger-ui-dist` (default `5.32.12`, overridable via the
@@ -30,13 +30,13 @@ and `nginx.conf` into a minimal `nginx:alpine` image. There is no Node.js runtim
 
 ```bash
 # With a specific Swagger UI version
-docker build --build-arg SWAGGER_UI_VERSION=5.32.12 -t docs .
+docker build --build-arg SWAGGER_UI_VERSION=5.32.12 -t slovo-propovedi-docs .
 ```
 
 ## Run it locally
 
 ```bash
-docker run --rm -p 8080:8080 docs
+docker run --rm -p 8080:8080 slovo-propovedi-docs
 ```
 
 Then open <http://localhost:8080/> to browse the API documentation.
@@ -54,7 +54,7 @@ curl -s http://localhost:8080/openAPI.yaml | head
 2. Rebuild the image:
 
    ```bash
-   docker build -t docs .
+   docker build -t slovo-propovedi-docs .
    ```
 
 3. Restart the container with the new image.
