@@ -8,7 +8,7 @@
 |------|--------------|-----|
 | Рантайм | `nginx:alpine` | Раздача статики Swagger UI + `openAPI.yaml` на порту 8080; минимальная поверхность атаки, нет рантайм-приложения (см. [`architecture.md`](./architecture.md)) |
 | Swagger UI | `swagger-ui-dist` `5.32.12` | Статические ассеты Swagger UI; только на этапе сборки, переопределяется через build arg `SWAGGER_UI_VERSION` |
-| Build stage | `node:20-alpine` | Загрузка `swagger-ui-dist` (npm-пакет) в Stage 1 multi-stage build |
+| Build stage | `node:24-alpine` | Загрузка `swagger-ui-dist` (npm-пакет) в Stage 1 multi-stage build; Node 24 — текущий LTS (Node 20 EOL апрель 2026) |
 | Сборка | Docker multi-stage | Прод-образ не содержит Node.js runtime — только nginx (см. [`architecture.md`](./architecture.md)) |
 | TLS/прокси | Traefik `v3.4` | Реверс-прокси, автосертификаты Let's Encrypt (ACME httpChallenge), HTTP→HTTPS redirect |
 | Супервизор | systemd | Процессный супервизор для одного контейнера: `Restart=always`, авто-старт, журнал |

@@ -3,7 +3,7 @@
 # ---------------------------------------------------------------------------
 # Stage 1: build — download the swagger-ui-dist static assets
 # ---------------------------------------------------------------------------
-FROM node:20-alpine AS swagger-ui-build
+FROM node:24-alpine AS swagger-ui-build
 
 ARG SWAGGER_UI_VERSION=5.32.12
 

@@ -45,7 +45,7 @@ docker build --build-arg SWAGGER_UI_VERSION=5.40.0 -t slovo-propovedi-docs .
 This is a **fully static service**: an nginx container that serves the Swagger UI documentation UI and the `openAPI.yaml` specification file. It is **independent** of the admin backend — no Postgres, MinIO, or backend containers are required to run it.
 
 - **Multi-stage Docker build** (`Dockerfile`):
-  - **Stage 1** (`node:20-alpine`) downloads `swagger-ui-dist` (default `5.32.12`, overridable via the `SWAGGER_UI_VERSION` build arg) and copies the static assets.
+  - **Stage 1** (`node:24-alpine`) downloads `swagger-ui-dist` (default `5.32.12`, overridable via the `SWAGGER_UI_VERSION` build arg) and copies the static assets.
   - **Stage 2** (`nginx:alpine`) serves the static files. **There is no Node.js runtime in the production image** — Swagger UI is pure static JS.
 - **Endpoints:** `/` = Swagger UI; `/openAPI.yaml` = raw OpenAPI spec.
 - **Dev editor** is a separate compose service (`docker-compose.dev.yml`, port `127.0.0.1:8081`) running the official Swagger Editor v5 with a save-proxy. It is **NOT** part of the production image and must never be deployed. It mounts `openAPI.yaml` read-write.

@@ -17,7 +17,7 @@
 `Dockerfile` построен в два этапа:
 
 ```
-Stage 1 (node:20-alpine, build)  →  npm install swagger-ui-dist → копия статики в /out
+Stage 1 (node:24-alpine, build)  →  npm install swagger-ui-dist → копия статики в /out
 Stage 2 (nginx:alpine, runtime)  →  COPY --from=swagger-ui-build /out/ → раздача статики
 ```
 
