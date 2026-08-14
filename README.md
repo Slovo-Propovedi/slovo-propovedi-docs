@@ -1,6 +1,6 @@
 # Docs service
 
-Standalone Swagger UI + OpenAPI spec service for the **Admin API — Слово.Проповеди**.
+Standalone Swagger UI + OpenAPI spec service for the **API — Слово.Проповеди**.
 
 The service is a fully static nginx container: it serves the Swagger UI documentation UI and the
 `openAPI.yaml` specification file. It is **independent** of the admin backend — no Postgres, MinIO,

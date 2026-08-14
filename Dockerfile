@@ -19,7 +19,7 @@ RUN npm install "swagger-ui-dist@${SWAGGER_UI_VERSION}" --no-save --no-package-l
 FROM nginx:alpine
 
 LABEL org.opencontainers.image.title="slovo-propovedi-docs" \
-  org.opencontainers.image.description="Standalone Swagger UI + OpenAPI spec for the Slovo Propovedi Admin API"
+  org.opencontainers.image.description="Standalone Swagger UI + OpenAPI spec for the Slovo Propovedi API"
 
 COPY --from=swagger-ui-build /out/ /usr/share/nginx/html/
 COPY index.html /usr/share/nginx/html/index.html

@@ -1,6 +1,6 @@
 openapi: 3.0.3
 info:
-  title: Admin API — Слово.Проповеди
+  title: API — Слово.Проповеди
   version: 0.6.1
   description: |
     REST API сервиса «Слово.Проповеди».
