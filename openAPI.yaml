@@ -587,6 +587,25 @@ paths:
                 $ref: '#/components/schemas/RefreshResponse'
       tags:
         - Auth
+  /auth/logout:
+    post:
+      operationId: AuthController_logout
+      summary: Выход из системы
+      description: Отзывает refresh-токен (denylist). Access-токен остаётся технически валидным до истечения срока (не более 30 минут); клиент обязан удалить оба токена.
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LogoutRequestDto'
+      responses:
+        '204':
+          description: Сессия завершена, refresh-токен отозван
+      tags:
+        - Auth
+      security:
+        - bearer: []
   /auth/profile:
     get:
       operationId: AuthController_getProfile
@@ -1470,6 +1489,15 @@ components:
       properties:
         refreshToken:
           type: string
+      required:
+        - refreshToken
+    LogoutRequestDto:
+      type: object
+      additionalProperties: false
+      properties:
+        refreshToken:
+          type: string
+          description: Refresh-токен, который нужно отозвать
       required:
         - refreshToken
     RefreshResponse:
