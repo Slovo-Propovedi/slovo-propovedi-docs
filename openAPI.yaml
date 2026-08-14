@@ -1,4 +1,4 @@
-openapi: 3.0.3
+openapi: 3.2.0
 info:
   title: API — Слово.Проповеди
   version: 0.7.1
@@ -6,10 +6,10 @@ info:
     REST API сервиса «Слово.Проповеди».
     Позволяет управлять проповедями, плейлистами, разделами, загружать файлы и работать с пользователями.
 servers:
-  - url: http://localhost:3000
-    description: Локальный сервер разработки
   - url: https://api.slovo-propovedi.ru
     description: Продакшн сервер
+  - url: http://localhost:3000
+    description: Локальный сервер разработки
 tags:
   - name: Auth
     description: Аутентификация пользователей
@@ -23,7 +23,23 @@ tags:
     description: Управление плейлистами
   - name: Users
     description: Управление пользователями (админами)
+  - name: Basic
+    description: Базовые роуты
 paths:
+  /health:
+    get:
+      operationId: HealthController_check
+      summary: Проверить состояние сервиса
+      parameters: []
+      responses:
+        "200":
+          description: "Состояние сервиса"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
+      tags:
+        - Basic
   /files:
     post:
       operationId: AppController_uploadFile
@@ -42,12 +58,12 @@ paths:
                   format: binary
                   description: "Допустимые форматы — JPEG, PNG, WebP, MP3, PDF, FB2. Другие форматы будут отклонены."
       responses:
-        '200':
+        "200":
           description: Файл успешно загружен
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/IFileResponseDto'
+                $ref: "#/components/schemas/IFileResponseDto"
       tags:
         - Files
       security:
@@ -57,14 +73,14 @@ paths:
       summary: List image files
       description: "Returns a list of all image files in storage (for cover reuse feature)"
       tags:
-        - files
+        - Files
       responses:
-        '200':
+        "200":
           description: List of image files
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AllFilesResponse'
+                $ref: "#/components/schemas/AllFilesResponse"
   /files/{fileName}/stream-url:
     get:
       operationId: AppController_getStreamUrl
@@ -76,12 +92,12 @@ paths:
           schema:
             type: string
       responses:
-        '200':
-          description: 'Предварительно подписанный URL потока'
+        "200":
+          description: "Предварительно подписанный URL потока"
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/StreamUrlResponse'
+                $ref: "#/components/schemas/StreamUrlResponse"
       tags:
         - Files
   /files/{fileName}:
@@ -95,26 +111,14 @@ paths:
           schema:
             type: string
       responses:
-        '200':
+        "200":
           description: Информация о файле
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/IFileResponseDto'
+                $ref: "#/components/schemas/IFileResponseDto"
       tags:
         - Files
-  /health:
-    get:
-      operationId: HealthController_check
-      summary: Проверить состояние сервиса
-      parameters: []
-      responses:
-        '200':
-          description: 'Состояние сервиса'
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/HealthResponse'
   /section:
     post:
       operationId: SectionController_create
@@ -125,14 +129,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreateSectionDto'
+              $ref: "#/components/schemas/CreateSectionDto"
       responses:
-        '200':
+        "200":
           description: Раздел создан
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SectionEntity'
+                $ref: "#/components/schemas/SectionEntity"
       tags:
         - Sections
       security:
@@ -142,12 +146,12 @@ paths:
       summary: Получить все разделы
       parameters: []
       responses:
-        '200':
+        "200":
           description: Список разделов
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AllSectionsResponse'
+                $ref: "#/components/schemas/AllSectionsResponse"
       tags:
         - Sections
   /section/reorder:
@@ -161,16 +165,16 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ReorderSectionsDto'
+              $ref: "#/components/schemas/ReorderSectionsDto"
       responses:
-        '200':
+        "200":
           description: Порядок разделов обновлён
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/StatusSectionsResponse'
+                $ref: "#/components/schemas/StatusSectionsResponse"
       tags:
-        - section
+        - Sections
       security:
         - bearer: []
   /section/{id}:
@@ -185,12 +189,12 @@ paths:
             type: string
             format: uuid
       responses:
-        '200':
+        "200":
           description: Раздел
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SectionEntity'
+                $ref: "#/components/schemas/SectionEntity"
       tags:
         - Sections
     patch:
@@ -208,14 +212,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/UpdateSectionDto'
+              $ref: "#/components/schemas/UpdateSectionDto"
       responses:
-        '200':
+        "200":
           description: Раздел обновлён
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SectionEntity'
+                $ref: "#/components/schemas/SectionEntity"
       tags:
         - Sections
       security:
@@ -231,12 +235,12 @@ paths:
             type: string
             format: uuid
       responses:
-        '200':
+        "200":
           description: Раздел удалён
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/StatusSectionsResponse'
+                $ref: "#/components/schemas/StatusSectionsResponse"
       tags:
         - Sections
       security:
@@ -258,16 +262,16 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ReorderPlaylistsDto'
+              $ref: "#/components/schemas/ReorderPlaylistsDto"
       responses:
-        '200':
+        "200":
           description: Порядок плейлистов в разделе обновлён
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/StatusSectionsResponse'
+                $ref: "#/components/schemas/StatusSectionsResponse"
       tags:
-        - section
+        - Sections
       security:
         - bearer: []
   /playlists:
@@ -280,14 +284,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreatePlaylistDto'
+              $ref: "#/components/schemas/CreatePlaylistDto"
       responses:
-        '200':
+        "200":
           description: Плейлист создан
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PlaylistEntity'
+                $ref: "#/components/schemas/PlaylistEntity"
       tags:
         - Playlists
       security:
@@ -297,12 +301,12 @@ paths:
       summary: Получить все плейлисты
       parameters: []
       responses:
-        '200':
+        "200":
           description: Список плейлистов
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AllPlaylistsResponse'
+                $ref: "#/components/schemas/AllPlaylistsResponse"
       tags:
         - Playlists
   /playlists/{id}:
@@ -317,12 +321,12 @@ paths:
             type: string
             format: uuid
       responses:
-        '200':
+        "200":
           description: Плейлист
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PlaylistEntity'
+                $ref: "#/components/schemas/PlaylistEntity"
       tags:
         - Playlists
     patch:
@@ -340,14 +344,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/UpdatePlaylistDto'
+              $ref: "#/components/schemas/UpdatePlaylistDto"
       responses:
-        '200':
+        "200":
           description: Плейлист обновлён
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PlaylistEntity'
+                $ref: "#/components/schemas/PlaylistEntity"
       tags:
         - Playlists
       security:
@@ -363,12 +367,12 @@ paths:
             type: string
             format: uuid
       responses:
-        '200':
+        "200":
           description: Плейлист удалён
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/StatusPlaylistResponse'
+                $ref: "#/components/schemas/StatusPlaylistResponse"
       tags:
         - Playlists
       security:
@@ -390,16 +394,16 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ReorderSermonsDto'
+              $ref: "#/components/schemas/ReorderSermonsDto"
       responses:
-        '200':
+        "200":
           description: Порядок проповедей в плейлисте обновлён
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/StatusPlaylistResponse'
+                $ref: "#/components/schemas/StatusPlaylistResponse"
       tags:
-        - playlists
+        - Playlists
       security:
         - bearer: []
   /sermons:
@@ -412,14 +416,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreateSermonDto'
+              $ref: "#/components/schemas/CreateSermonDto"
       responses:
-        '200':
+        "200":
           description: Проповедь создана
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SermonEntity'
+                $ref: "#/components/schemas/SermonEntity"
       tags:
         - Sermons
       security:
@@ -449,12 +453,12 @@ paths:
             type: string
             minLength: 1
       responses:
-        '200':
+        "200":
           description: Список проповедей с количеством
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AllSermonsResponse'
+                $ref: "#/components/schemas/AllSermonsResponse"
       tags:
         - Sermons
   /sermons/{id}/stream-url:
@@ -469,12 +473,12 @@ paths:
             type: string
             format: uuid
       responses:
-        '200':
-          description: 'Предварительно подписанный URL потока'
+        "200":
+          description: "Предварительно подписанный URL потока"
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/StreamUrlResponse'
+                $ref: "#/components/schemas/StreamUrlResponse"
       tags:
         - Sermons
   /sermons/{id}:
@@ -489,12 +493,12 @@ paths:
             type: string
             format: uuid
       responses:
-        '200':
+        "200":
           description: Проповедь
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SermonEntity'
+                $ref: "#/components/schemas/SermonEntity"
       tags:
         - Sermons
     patch:
@@ -512,14 +516,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/UpdateSermonDto'
+              $ref: "#/components/schemas/UpdateSermonDto"
       responses:
-        '200':
+        "200":
           description: Проповедь обновлена
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/StatusSermonResponse'
+                $ref: "#/components/schemas/StatusSermonResponse"
       tags:
         - Sermons
       security:
@@ -535,12 +539,12 @@ paths:
             type: string
             format: uuid
       responses:
-        '200':
+        "200":
           description: Проповедь удалена
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/StatusSermonResponse'
+                $ref: "#/components/schemas/StatusSermonResponse"
       tags:
         - Sermons
       security:
@@ -556,14 +560,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/SignInRequestDto'
+              $ref: "#/components/schemas/SignInRequestDto"
       responses:
-        '200':
+        "200":
           description: Успешный вход
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AuthResponse'
+                $ref: "#/components/schemas/AuthResponse"
       tags:
         - Auth
   /auth/refresh:
@@ -577,14 +581,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/RefreshTokenDto'
+              $ref: "#/components/schemas/RefreshTokenDto"
       responses:
-        '200':
+        "200":
           description: Новая пара токенов
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RefreshResponse'
+                $ref: "#/components/schemas/RefreshResponse"
       tags:
         - Auth
   /auth/logout:
@@ -598,9 +602,9 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/LogoutRequestDto'
+              $ref: "#/components/schemas/LogoutRequestDto"
       responses:
-        '204':
+        "204":
           description: Сессия завершена, refresh-токен отозван
       tags:
         - Auth
@@ -612,12 +616,12 @@ paths:
       summary: Получить профиль текущего пользователя
       parameters: []
       responses:
-        '200':
+        "200":
           description: Профиль пользователя
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/UserResponse'
+                $ref: "#/components/schemas/UserResponse"
       tags:
         - Auth
       security:
@@ -630,14 +634,14 @@ paths:
       security:
         - bearer: []
       responses:
-        '200':
+        "200":
           description: Список пользователей
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/UserResponse'
+                  $ref: "#/components/schemas/UserResponse"
     post:
       tags:
         - Users
@@ -649,14 +653,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreateUserRequest'
+              $ref: "#/components/schemas/CreateUserRequest"
       responses:
-        '201':
+        "201":
           description: Пользователь создан
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/UserResponse'
+                $ref: "#/components/schemas/UserResponse"
   /users/{id}:
     get:
       tags:
@@ -672,12 +676,12 @@ paths:
             type: string
             format: uuid
       responses:
-        '200':
+        "200":
           description: Пользователь
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/UserResponse'
+                $ref: "#/components/schemas/UserResponse"
     patch:
       tags:
         - Users
@@ -696,14 +700,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/UpdateUserRequest'
+              $ref: "#/components/schemas/UpdateUserRequest"
       responses:
-        '200':
+        "200":
           description: Пользователь обновлён
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/UserResponse'
+                $ref: "#/components/schemas/UserResponse"
     delete:
       tags:
         - Users
@@ -718,7 +722,7 @@ paths:
             type: string
             format: uuid
       responses:
-        '204':
+        "204":
           description: Пользователь удалён
   /users/{id}/password:
     patch:
@@ -739,9 +743,9 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ChangePasswordRequest'
+              $ref: "#/components/schemas/ChangePasswordRequest"
       responses:
-        '204':
+        "204":
           description: Пароль изменён
 components:
   securitySchemes:
@@ -804,7 +808,7 @@ components:
         files:
           type: array
           items:
-            $ref: '#/components/schemas/FileMetadataDto'
+            $ref: "#/components/schemas/FileMetadataDto"
         count:
           type: integer
       required:
@@ -839,7 +843,7 @@ components:
         whereIsSlideTitleLocated:
           type: string
           enum:
-            - 'on'
+            - "on"
             - under
             - bothOnAndUnder
         borderRadius:
@@ -886,7 +890,7 @@ components:
         whereIsSlideTitleLocated:
           type: string
           enum:
-            - 'on'
+            - "on"
             - under
             - bothOnAndUnder
           default: under
@@ -896,7 +900,7 @@ components:
         playlists:
           type: array
           items:
-            $ref: '#/components/schemas/SectionPlaylist'
+            $ref: "#/components/schemas/SectionPlaylist"
       required:
         - id
         - title
@@ -935,11 +939,11 @@ components:
         sections:
           type: array
           items:
-            $ref: '#/components/schemas/SectionRef'
+            $ref: "#/components/schemas/SectionRef"
         sermons:
           type: array
           items:
-            $ref: '#/components/schemas/PlaylistSermon'
+            $ref: "#/components/schemas/PlaylistSermon"
       required:
         - id
         - title
@@ -989,7 +993,7 @@ components:
         playlists:
           type: array
           items:
-            $ref: '#/components/schemas/PlaylistEntity'
+            $ref: "#/components/schemas/PlaylistEntity"
       required:
         - id
         - title
@@ -1086,11 +1090,11 @@ components:
         sections:
           type: array
           items:
-            $ref: '#/components/schemas/SectionEntity'
+            $ref: "#/components/schemas/SectionEntity"
         sermons:
           type: array
           items:
-            $ref: '#/components/schemas/PlaylistSermon'
+            $ref: "#/components/schemas/PlaylistSermon"
       required:
         - id
         - title
@@ -1105,7 +1109,7 @@ components:
         sections:
           type: array
           items:
-            $ref: '#/components/schemas/SectionEntity'
+            $ref: "#/components/schemas/SectionEntity"
         count:
           type: number
       required:
@@ -1144,7 +1148,7 @@ components:
         whereIsSlideTitleLocated:
           type: string
           enum:
-            - 'on'
+            - "on"
             - under
             - bothOnAndUnder
         borderRadius:
@@ -1192,7 +1196,7 @@ components:
         playlists:
           type: array
           items:
-            $ref: '#/components/schemas/PlaylistEntity'
+            $ref: "#/components/schemas/PlaylistEntity"
         count:
           type: number
       required:
@@ -1318,7 +1322,7 @@ components:
         sermons:
           type: array
           items:
-            $ref: '#/components/schemas/SermonEntity'
+            $ref: "#/components/schemas/SermonEntity"
         count:
           type: number
           nullable: true
@@ -1424,7 +1428,7 @@ components:
         email:
           type: string
         role:
-          $ref: '#/components/schemas/UserRole'
+          $ref: "#/components/schemas/UserRole"
       required:
         - id
         - name
@@ -1449,7 +1453,7 @@ components:
         password:
           type: string
         role:
-          $ref: '#/components/schemas/UserRole'
+          $ref: "#/components/schemas/UserRole"
     UpdateUserRequest:
       type: object
       additionalProperties: false
@@ -1461,7 +1465,7 @@ components:
         username:
           type: string
         role:
-          $ref: '#/components/schemas/UserRole'
+          $ref: "#/components/schemas/UserRole"
     ChangePasswordRequest:
       type: object
       additionalProperties: false
@@ -1479,7 +1483,7 @@ components:
         refreshToken:
           type: string
         user:
-          $ref: '#/components/schemas/UserResponse'
+          $ref: "#/components/schemas/UserResponse"
       required:
         - accessToken
         - refreshToken
