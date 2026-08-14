@@ -1384,6 +1384,13 @@ components:
       required:
         - username
         - password
+    UserRole:
+      type: string
+      enum:
+        - admin
+        - moderator
+        - user
+      description: Роль пользователя в системе
     UserResponse:
       type: object
       additionalProperties: false
@@ -1397,11 +1404,14 @@ components:
           description: Имя пользователя для входа в систему
         email:
           type: string
+        role:
+          $ref: '#/components/schemas/UserRole'
       required:
         - id
         - name
         - username
         - email
+        - role
     CreateUserRequest:
       type: object
       additionalProperties: false
@@ -1419,6 +1429,8 @@ components:
           type: string
         password:
           type: string
+        role:
+          $ref: '#/components/schemas/UserRole'
     UpdateUserRequest:
       type: object
       additionalProperties: false
@@ -1429,6 +1441,8 @@ components:
           type: string
         username:
           type: string
+        role:
+          $ref: '#/components/schemas/UserRole'
     ChangePasswordRequest:
       type: object
       additionalProperties: false
