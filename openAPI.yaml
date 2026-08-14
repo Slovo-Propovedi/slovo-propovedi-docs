@@ -3,7 +3,7 @@ info:
   title: Admin API — Слово.Проповеди
   version: 0.6.0
   description: |
-    REST API для административной панели проекта "Слово.Проповеди".
+    REST API сервиса «Слово.Проповеди».
     Позволяет управлять проповедями, плейлистами, разделами, загружать файлы и работать с пользователями.
 servers:
   - url: http://localhost:3000
@@ -12,7 +12,7 @@ servers:
     description: Продакшн сервер
 tags:
   - name: Auth
-    description: Аутентификация администраторов
+    description: Аутентификация пользователей
   - name: Files
     description: Загрузка и получение файлов через MinIO
   - name: Sermons
@@ -548,7 +548,7 @@ paths:
   /auth/login:
     post:
       operationId: AuthController_signIn
-      summary: Вход в админ-панель
+      summary: Вход в систему
       description: Возвращает JWT токен для дальнейших запросов
       parameters: []
       requestBody:
