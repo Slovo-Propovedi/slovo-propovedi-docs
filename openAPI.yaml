@@ -461,6 +461,20 @@ paths:
                 $ref: "#/components/schemas/AllSermonsResponse"
       tags:
         - Sermons
+  /sermons/distinct-values:
+    get:
+      operationId: SermonController_getDistinctValues
+      summary: Получить список ранее использованных проповедников и книг (для автодополнения)
+      parameters: []
+      responses:
+        "200":
+          description: Списки уникальных значений проповедников и книг
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SermonDistinctValuesResponse"
+      tags:
+        - Sermons
   /sermons/{id}/stream-url:
     get:
       operationId: SermonController_getStreamUrl
@@ -1309,6 +1323,22 @@ components:
         - sermons
         - count
         - nextCursor
+    SermonDistinctValuesResponse:
+      type: object
+      additionalProperties: false
+      description: Списки уникальных значений проповедников и книг
+      properties:
+        artists:
+          type: array
+          items:
+            type: string
+        books:
+          type: array
+          items:
+            type: string
+      required:
+        - artists
+        - books
     UpdateSermonDto:
       type: object
       properties:
