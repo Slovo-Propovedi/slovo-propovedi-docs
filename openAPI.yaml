@@ -789,13 +789,11 @@ components:
         fileUrl:
           type: string
         size:
-          type: integer
+          type: [integer, 'null']
           format: int64
-          nullable: true
         lastModified:
-          type: string
+          type: [string, 'null']
           format: date-time
-          nullable: true
       required:
         - fileName
         - fileUrl
@@ -820,8 +818,7 @@ components:
         title:
           type: string
         description:
-          type: string
-          nullable: true
+          type: [string, 'null']
         itemsSize:
           type: string
           enum:
@@ -830,8 +827,7 @@ components:
             - large
             - xLarge
         itemsRows:
-          type: number
-          nullable: true
+          type: [number, 'null']
         transform:
           type: string
           enum:
@@ -863,8 +859,7 @@ components:
         title:
           type: string
         description:
-          type: string
-          nullable: true
+          type: [string, 'null']
         # Global order of sections (drag-and-drop reordering).
         position:
           type: integer
@@ -876,8 +871,7 @@ components:
             - large
             - xLarge
         itemsRows:
-          type: number
-          nullable: true
+          type: [number, 'null']
         transform:
           type: string
           enum:
@@ -963,24 +957,19 @@ components:
         description:
           type: string
         textFileUrl:
-          type: string
-          nullable: true
+          type: [string, 'null']
         audioUrl:
-          type: string
-          nullable: true
+          type: [string, 'null']
         youtubeUrl:
-          type: string
-          nullable: true
+          type: [string, 'null']
         artist:
           type: string
         artwork:
           type: string
         book:
-          type: string
-          nullable: true
+          type: [string, 'null']
         chapter:
-          type: number
-          nullable: true
+          type: [number, 'null']
         verse:
           oneOf:
             - type: integer
@@ -989,7 +978,7 @@ components:
                 type: integer
               minItems: 2
               maxItems: 2
-          nullable: true
+            - type: 'null'
         playlists:
           type: array
           items:
@@ -1018,24 +1007,19 @@ components:
         description:
           type: string
         textFileUrl:
-          type: string
-          nullable: true
+          type: [string, 'null']
         audioUrl:
-          type: string
-          nullable: true
+          type: [string, 'null']
         youtubeUrl:
-          type: string
-          nullable: true
+          type: [string, 'null']
         artist:
           type: string
         artwork:
           type: string
         book:
-          type: string
-          nullable: true
+          type: [string, 'null']
         chapter:
-          type: integer
-          nullable: true
+          type: [integer, 'null']
         verse:
           oneOf:
             - type: integer
@@ -1044,7 +1028,7 @@ components:
                 type: integer
               minItems: 2
               maxItems: 2
-          nullable: true
+            - type: 'null'
         # Position of this sermon within the playlist that references it.
         position:
           type: integer
@@ -1121,8 +1105,7 @@ components:
         title:
           type: string
         description:
-          type: string
-          nullable: true
+          type: [string, 'null']
         playlistsIds:
           type: array
           items:
@@ -1135,8 +1118,7 @@ components:
             - large
             - xLarge
         itemsRows:
-          type: number
-          nullable: true
+          type: [number, 'null']
         transform:
           type: string
           enum:
@@ -1177,8 +1159,7 @@ components:
         title:
           type: string
         description:
-          type: string
-          nullable: true
+          type: [string, 'null']
         artwork:
           type: string
         sermonsIds:
@@ -1212,8 +1193,7 @@ components:
         title:
           type: string
         description:
-          type: string
-          nullable: true
+          type: [string, 'null']
         artwork:
           type: string
         sermonsIds:
@@ -1273,28 +1253,22 @@ components:
         title:
           type: string
         description:
-          type: string
-          nullable: true
+          type: [string, 'null']
         textFileUrl:
-          type: string
-          nullable: true
+          type: [string, 'null']
         audioUrl:
-          type: string
-          nullable: true
+          type: [string, 'null']
         youtubeUrl:
-          type: string
-          nullable: true
+          type: [string, 'null']
         artist:
           type: string
         artwork:
           type: string
         book:
-          type: string
-          nullable: true
+          type: [string, 'null']
           example: Genesis
         chapter:
-          type: number
-          nullable: true
+          type: [number, 'null']
         verse:
           oneOf:
             - type: integer
@@ -1303,7 +1277,7 @@ components:
                 type: integer
               minItems: 2
               maxItems: 2
-          nullable: true
+            - type: 'null'
         playlistsIds:
           type: array
           items:
@@ -1328,11 +1302,9 @@ components:
           items:
             $ref: "#/components/schemas/SermonEntity"
         count:
-          type: number
-          nullable: true
+          type: [number, 'null']
         nextCursor:
-          type: string
-          nullable: true
+          type: [string, 'null']
       required:
         - sermons
         - count
@@ -1343,28 +1315,22 @@ components:
         title:
           type: string
         description:
-          type: string
-          nullable: true
+          type: [string, 'null']
         textFileUrl:
-          type: string
-          nullable: true
+          type: [string, 'null']
         audioUrl:
-          type: string
-          nullable: true
+          type: [string, 'null']
         youtubeUrl:
-          type: string
-          nullable: true
+          type: [string, 'null']
         artist:
           type: string
         artwork:
           type: string
         book:
-          type: string
-          nullable: true
+          type: [string, 'null']
           example: Genesis
         chapter:
-          type: number
-          nullable: true
+          type: [number, 'null']
         verse:
           oneOf:
             - type: integer
@@ -1373,7 +1339,7 @@ components:
                 type: integer
               minItems: 2
               maxItems: 2
-          nullable: true
+            - type: 'null'
         playlistsIds:
           type: array
           items:
