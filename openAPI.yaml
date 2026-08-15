@@ -1,7 +1,7 @@
 openapi: 3.2.0
 info:
   title: API — Слово.Проповеди
-  version: 0.7.2
+  version: 0.8.0
   description: |
     REST API сервиса «Слово.Проповеди».
     Позволяет управлять проповедями, плейлистами, разделами, загружать файлы и работать с пользователями.
@@ -1182,6 +1182,10 @@ components:
         artwork:
           type: string
         sermonsIds:
+          type: array
+          items:
+            type: string
+        sectionsIds:
           type: array
           items:
             type: string
