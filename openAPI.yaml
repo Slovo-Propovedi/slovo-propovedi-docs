@@ -299,7 +299,14 @@ paths:
     get:
       operationId: PlaylistController_findAll
       summary: Получить все плейлисты
-      parameters: []
+      parameters:
+        - name: search
+          required: false
+          in: query
+          description: Поисковый запрос по названию и описанию
+          schema:
+            type: string
+            minLength: 1
       responses:
         "200":
           description: Список плейлистов
