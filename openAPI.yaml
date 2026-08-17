@@ -1,7 +1,7 @@
 openapi: 3.2.0
 info:
   title: API — Слово.Проповеди
-  version: 0.10.0
+  version: 0.11.0
   description: |
     REST API сервиса «Слово.Проповеди».
     Позволяет управлять проповедями, плейлистами, разделами, загружать файлы и работать с пользователями.
@@ -990,7 +990,14 @@ components:
         book:
           type: [string, 'null']
         chapter:
-          type: [number, 'null']
+          oneOf:
+            - type: integer
+            - type: array
+              items:
+                type: integer
+              minItems: 2
+              maxItems: 2
+            - type: 'null'
         verse:
           oneOf:
             - type: integer
@@ -1040,7 +1047,14 @@ components:
         book:
           type: [string, 'null']
         chapter:
-          type: [integer, 'null']
+          oneOf:
+            - type: integer
+            - type: array
+              items:
+                type: integer
+              minItems: 2
+              maxItems: 2
+            - type: 'null'
         verse:
           oneOf:
             - type: integer
@@ -1289,7 +1303,14 @@ components:
           type: [string, 'null']
           example: Genesis
         chapter:
-          type: [number, 'null']
+          oneOf:
+            - type: integer
+            - type: array
+              items:
+                type: integer
+              minItems: 2
+              maxItems: 2
+            - type: 'null'
         verse:
           oneOf:
             - type: integer
@@ -1367,7 +1388,14 @@ components:
           type: [string, 'null']
           example: Genesis
         chapter:
-          type: [number, 'null']
+          oneOf:
+            - type: integer
+            - type: array
+              items:
+                type: integer
+              minItems: 2
+              maxItems: 2
+            - type: 'null'
         verse:
           oneOf:
             - type: integer
