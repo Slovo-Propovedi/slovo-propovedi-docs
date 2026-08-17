@@ -307,9 +307,24 @@ paths:
           schema:
             type: string
             minLength: 1
+        - name: page
+          required: false
+          in: query
+          description: Номер страницы для оффсетной пагинации
+          schema:
+            type: integer
+            minimum: 1
+        - name: limit
+          required: false
+          in: query
+          description: Размер страницы; если указан без page, используется первая страница
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
       responses:
         "200":
-          description: Список плейлистов
+          description: Список плейлистов; count — общее число; сортировка по убыванию id (новые первыми); при поиске — по релевантности, затем по убыванию id
           content:
             application/json:
               schema:
@@ -459,9 +474,24 @@ paths:
           schema:
             type: string
             minLength: 1
+        - name: page
+          required: false
+          in: query
+          description: Номер страницы для оффсетной пагинации; взаимоисключителен с take и cursor (одновременное использование → 400)
+          schema:
+            type: integer
+            minimum: 1
+        - name: limit
+          required: false
+          in: query
+          description: Размер страницы; если указан без page, используется первая страница
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
       responses:
         "200":
-          description: Список проповедей с количеством
+          description: Список проповедей с количеством; в оффсетном режиме count — общее число записей, nextCursor — null
           content:
             application/json:
               schema:
@@ -654,15 +684,29 @@ paths:
       operationId: UsersController_findAll
       security:
         - bearer: []
+      parameters:
+        - name: page
+          required: false
+          in: query
+          description: Номер страницы для оффсетной пагинации
+          schema:
+            type: integer
+            minimum: 1
+        - name: limit
+          required: false
+          in: query
+          description: Размер страницы; если указан без page, используется первая страница
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
       responses:
         "200":
           description: Список пользователей
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/UserResponse"
+                $ref: "#/components/schemas/AllUsersResponse"
     post:
       tags:
         - Users
@@ -1489,6 +1533,19 @@ components:
         - moderator
         - user
       description: Роль пользователя в системе
+    AllUsersResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        users:
+          type: array
+          items:
+            $ref: "#/components/schemas/UserResponse"
+        count:
+          type: integer
+      required:
+        - users
+        - count
     UserResponse:
       type: object
       additionalProperties: false
