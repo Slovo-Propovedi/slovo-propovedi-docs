@@ -66,13 +66,28 @@ log('✓ Updated openAPI.yaml', GREEN)
 const changelogPath = 'CHANGELOG.md'
 
 // Get commit messages since last version tag
+const getCommitMessages = (range) => {
+  const log = execSync(`git log ${range} --format=%s --no-merges`, { encoding: 'utf-8' }).trim()
+  return log ? log.split('\n') : []
+}
+
 let commitMessages = []
 try {
-  const log = execSync(`git log v${currentVersion}..HEAD --format=%s --no-merges`, { encoding: 'utf-8' }).trim()
-  if (log) commitMessages = log.split('\n')
+  commitMessages = getCommitMessages(`v${currentVersion}..HEAD`)
 } catch {
-  // No previous tag — no commits to categorize
-  commitMessages = []
+  // v<currentVersion> tag is missing (version was bumped without tagging) — fall back to the
+  // most recent reachable tag so the changelog is not silently empty
+  let fallbackTag
+  try {
+    fallbackTag = execSync('git describe --tags --abbrev=0', { encoding: 'utf-8' }).trim()
+  } catch {
+    // No tags at all — nothing to compare against, keep the empty section
+    fallbackTag = null
+  }
+  if (fallbackTag) {
+    log(`⚠ v${currentVersion} tag not found — using ${fallbackTag} as changelog base`, YELLOW)
+    commitMessages = getCommitMessages(`${fallbackTag}..HEAD`)
+  }
 }
 
 // Categorize by conventional commit type

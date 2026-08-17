@@ -51,7 +51,7 @@
 - Версия управляется скриптом `npm run bump-version <version|patch|minor|major>` (`scripts/bump-version.mjs`). Он:
   1. обновляет `package.json` version;
   2. обновляет `openAPI.yaml` `info.version`;
-  3. генерирует секцию `CHANGELOG.md` из conventional-коммитов с прошлого тега (feat→Added, fix→Fixed, refactor/perf→Changed);
+  3. генерирует секцию `CHANGELOG.md` из conventional-коммитов с прошлого тега (feat→Added, fix→Fixed, refactor/perf→Changed); если тег `v<текущая версия>` отсутствует (версию подняли без тега), берёт ближайший достижимый тег (`git describe --tags --abbrev=0`) и предупреждает об этом жёлтым сообщением — пустая секция возможна только когда тегов нет вообще;
   4. коммитит с signoff (`git commit -s`) и создаёт аннотированный тег `v*`.
 - После bump — `git push --tags origin main`: push тега `v*` запускает Release-workflow (см. [`ci-cd.md`](./ci-cd.md)).
 - **Согласованность версии** (тег = `package.json` = `openAPI.yaml`) проверяется Release-workflow — деплой не уйдёт при расхождении.
