@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.12.0] - 2026-08-17
 
+### Added
+
+- Allow sermon `chapter` to be a range `[from, to]` (mirrors the `verse` tuple) in SermonEntity, PlaylistSermon, CreateSermonDto, UpdateSermonDto
+
+> Note: 0.11.0 was never tagged or deployed — the chapter-range change first ships in v0.12.0.
+
 ## [0.11.0] - 2026-08-17
 
 ### Added
@@ -33,9 +39,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.8.0] - 2026-08-15
 
+### Added
+
+- Add `sectionsIds` to CreatePlaylistDto and UpdatePlaylistDto
+
 ## [0.7.2] - 2026-08-14
 
+### Changed
+
+- Upgrade OpenAPI spec to 3.2.0 and reorganize endpoint tags (add Basic tag for /health)
+
 ## [0.7.1] - 2026-08-14
+
+### Changed
+
+- Update ja-yaml package
 
 ## [0.7.0] - 2026-08-14
 
@@ -72,6 +90,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Remove container name race in docs systemd unit
 
 ## [0.4.2] - 2026-08-13
+
+### Changed
+
+- Update Node.js from 20 to 24 in Dockerfile and CI
 
 ## [0.4.1] - 2026-08-13
 
