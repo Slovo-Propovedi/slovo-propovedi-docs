@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Add offset pagination params and users list wrapper
 
+### Changed
+
+- **BREAKING**: `GET /users` now returns `{ users, count }` instead of a bare array
+
 ## [0.14.0] - 2026-08-17
 
 ### Added

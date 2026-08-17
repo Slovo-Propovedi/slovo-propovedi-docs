@@ -484,7 +484,7 @@ paths:
         - name: limit
           required: false
           in: query
-          description: Размер страницы; если указан без page, используется первая страница
+          description: Размер страницы; если указан без page, используется первая страница; взаимоисключителен с take и cursor (одновременное использование → 400)
           schema:
             type: integer
             minimum: 1
@@ -702,7 +702,7 @@ paths:
             maximum: 100
       responses:
         "200":
-          description: Список пользователей
+          description: Список пользователей; count — общее число пользователей
           content:
             application/json:
               schema:

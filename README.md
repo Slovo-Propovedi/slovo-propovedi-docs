@@ -16,7 +16,7 @@ or backend containers are required to run it.
 | Endpoint        | Description                                |
 | --------------- | ------------------------------------------ |
 | `/`             | Swagger UI (interactive API documentation) |
-| `/openAPI.yaml` | The OpenAPI 3.0.3 specification (raw YAML) |
+| `/openAPI.yaml` | The OpenAPI 3.2.0 specification (raw YAML) |
 
 ## Build the Docker image
 
@@ -49,7 +49,7 @@ curl -s http://localhost:8080/openAPI.yaml | head
 
 ## How to update the spec
 
-1. Edit `openAPI.yaml` (OpenAPI 3.0.3, servers: `http://localhost:3000` and
+1. Edit `openAPI.yaml` (OpenAPI 3.2.0, servers: `http://localhost:3000` and
    `https://api.example.com`).
 2. Rebuild the image:
 
