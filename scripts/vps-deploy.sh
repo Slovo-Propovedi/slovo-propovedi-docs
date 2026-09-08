@@ -195,6 +195,23 @@ else
   exit 1
 fi
 
-# --- 9. Cleanup ---
+# --- 9. Post-deploy cleanup (non-fatal, best effort) ---
+# Runs only after step 8 confirms the new service is active. Bounds disk growth
+# on the 2GB VPS across repeated releases: prunes dangling images only (no
+# --all; the previous release's image becomes dangling once slovo-docs:latest
+# is retagged) and caps the buildx builder cache. Strictly non-fatal — with
+# `set -e` a cleanup failure must never fail a successful deployment, so errors
+# are logged as warnings.
+echo ">> Pruning dangling Docker images..."
+if ! docker image prune --force; then
+  echo "WARN: docker image prune failed — skipping dangling image cleanup" >&2
+fi
+
+echo ">> Pruning buildx builder cache ($BUILDER_NAME, keep 2GB)..."
+if ! docker buildx prune --builder "$BUILDER_NAME" --keep-storage 2GB --force; then
+  echo "WARN: docker buildx prune failed — skipping builder cache cleanup" >&2
+fi
+
+# --- 10. Cleanup ---
 rm -f /tmp/vps-deploy.sh
 echo ">> Done."

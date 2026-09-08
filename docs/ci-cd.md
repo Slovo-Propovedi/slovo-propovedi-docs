@@ -146,7 +146,13 @@ GET {server}/api/v1/repos/{repo}/commits/{sha}/status
 
 ### Почему верификация и cleanup
 
-После `daemon-reload` и `restart` скрипт ждёт 2 сек и проверяет `systemctl is-active slovo-docs.service`; при неудаче выводит `systemctl status` и завершается с ошибкой. В конце удаляется `/tmp/vps-deploy.sh`.
+После `daemon-reload` и `restart` скрипт ждёт 2 сек и проверяет `systemctl is-active slovo-docs.service`; при неудаче выводит `systemctl status` и завершается с ошибкой.
+
+Затем — **пост-деплойная очистка** (строго non-fatal: с `set -e` сбой очистки не должен ронять успешный деплой, ошибки логируются как `WARN`). Она ограничивает рост диска на 2 ГБ VPS между релизами:
+- `docker image prune --force` — удаляет только dangling-образы (без `--all`); при каждом релизе тег `slovo-docs:latest` перевешивается, образ предыдущего релиза становится dangling и удаляется — откат делается повторным деплоем старого `v*`-тега;
+- `docker buildx prune --builder slovo-constrained --keep-storage 2GB --force` — кэп кэша билдера.
+
+В конце удаляется `/tmp/vps-deploy.sh`.
 
 ## Required secrets and variables
 
