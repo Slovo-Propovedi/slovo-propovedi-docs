@@ -16,7 +16,7 @@ push main ──────────► CI: validate:openapi ◄── PR в
                           │  (github.ref_type != 'tag' guard)
                           ▼
 push tag v* ──► Release: проверка версии → ждёт CI (poll) → ssh → tar+ssh
-                 → vps-deploy.sh (buildx + systemd + Traefik) → Forgejo Release
+                 → vps-deploy.sh (buildx + systemd, инфра проверяется) → Forgejo Release
 ```
 
 ## CI workflow (`ci.yml`)
@@ -83,7 +83,6 @@ GET {server}/api/v1/repos/{repo}/commits/{sha}/status
 ### Почему именно такие env-переменные на VPS
 
 - **`DEPLOY_TAG`** — git-тег (`github.ref_name`), чтобы скрипт знал, что деплоим.
-- **`ACME_EMAIL`** — email Let's Encrypt. Нужен **только для первого деплоя на «свежий» VPS**, когда Traefik ещё не работает (см. ниже); если Traefik уже поднят — не требуется.
 - **`DOCS_HOSTNAME`** — публичный hostname. Это Forgejo **variable** (`vars.DOCS_HOSTNAME`), а не secret: значение не чувствительное и должно быть видимым в логах/конфиге.
 
 ### Почему changelog через awk
@@ -102,27 +101,19 @@ GET {server}/api/v1/repos/{repo}/commits/{sha}/status
 
 Скрипт выполняется **на VPS от root**, запускается по ssh Release-workflow. Он заменил прежнюю Ansible-роль (`roles/custom/slovo-docs/`). Скрипт **идемпотентен** — безопасно перезапускать, обрабатывает и первый деплой, и обновление.
 
-### Почему auto-install Docker
+### Граница ответственности
 
-Если `docker` не найден — ставится через `https://get.docker.com` и включается через `systemctl enable --now docker`. Это позволяет деплоить на «голый» VPS без ручной установки Docker.
+Скрипт владеет **только** контейнером `slovo-docs` и своей Docker-сетью `slovo-docs`. Вся общая инфраструктура — Docker, пользователь/группа `slovo`, buildx-билдер `slovo-constrained`, Traefik (`slovo-traefik.service`) и Docker-сеть `traefik` — принадлежит внешнему `slovo-propovedi-playbook` (Ansible). Скрипт её **не создаёт**: при отсутствии любого компонента деплой падает с явной ошибкой (`fail_missing` → «Provision it first: just setup-all»), а не доводит VPS до полусобранного состояния. Это устраняет дублирующуюся копию ролей плейбука, которая раньше жила в скрипте и незаметно расходилась с оригиналом.
 
-### Почему создаётся `slovo` user/group
+### Что именно проверяется (и не провижинится)
 
-Контейнер должен работать от **не-root** аккаунта. Если `slovo` user/group не существует — создаются системные (`--system`, `--no-create-home`, shell `/sbin/nologin`). Скрипт читает `uid/gid` и использует их при запуске контейнера.
+- **Docker** — `command -v docker` + `systemctl is-active docker`.
+- **`slovo` user/group** — контейнер работает от не-root; скрипт читает `uid/gid` для запуска, но сам пользователя не создаёт (роль `slovo-base`).
+- **buildx builder `slovo-constrained`** — `docker buildx inspect`; билдер с ресурсными лимитами создаёт роль `slovo-buildx`.
+- **Traefik `slovo-traefik.service`** — `systemctl is-active`; если Traefik под другим именем юнита — `TRAEFIK_SERVICE=<name>`.
+- **Docker-сеть `traefik`** — `docker network inspect`.
 
-### Почему buildx builder `slovo-constrained`
-
-Создаётся buildx-билдер с driver `docker-container` и **ресурсными лимитами**: memory `1g`, cpu-quota `80000`. Цель — чтобы сборка Docker-образа не выжирала ресурсы других сервисов VPS (см. [`architecture.md`](./architecture.md)). Если билдер уже есть — переиспользуется.
-
-### Почему авто-провижининг Traefik
-
-Если сервис `slovo-traefik.service` не активен — скрипт **поднимает Traefik сам**:
-- пишет статический конфиг (`traefik.yml`): HTTP→HTTPS redirect (`web` → `web-secure`), ACME через Let's Encrypt `httpChallenge` на entryPoint `web`, docker provider (`exposedByDefault: false`, network `traefik`);
-- создаёт ACME-хранилище `acme.json` с **chmod 600** (Traefik требует именно такие права);
-- пишет systemd-юнит `slovo-traefik.service` (контейнер через `docker create`/`docker start --attach`, `Restart=always`);
-- пулит образ `traefik:v3.4`.
-
-**Почему `ACME_EMAIL` обязателен на свежем VPS:** без него Let's Encrypt не зарегистрирует сертификат. Если Traefik не работает, а `ACME_EMAIL` не задан — скрипт завершается с понятной ошибкой и подсказками (добавить секрет в Forgejo или указать `TRAEFIK_SERVICE`).
+Сеть `slovo-docs` — единственная, которую скрипт создаёт сам (шаг 4), т.к. она принадлежит этому сервису.
 
 ### Почему проверка исходников
 
@@ -134,7 +125,7 @@ GET {server}/api/v1/repos/{repo}/commits/{sha}/status
 
 ### Почему две Docker-сети
 
-Контейнер docs подключается к **двум** сетям: `slovo-docs` (изоляция от остальных контейнеров) и `traefik` (чтобы Traefik мог маршрутизировать к нему). Обе создаются автоматически, если отсутствуют. Наличие общего `traefik`-сети — обязательное условие, чтобы Traefik «увидел» контейнер.
+Контейнер docs подключается к **двум** сетям: `slovo-docs` (изоляция от остальных контейнеров, создаётся скриптом) и `traefik` (чтобы Traefik мог маршрутизировать к нему, создаётся плейбуком — скрипт лишь проверяет наличие). Наличие общей `traefik`-сети — обязательное условие, чтобы Traefik «увидел» контейнер.
 
 ### Почему `docker buildx build --load`
 
@@ -166,15 +157,16 @@ Settings → Actions.
 | Secret | `VPS_SSH_PRIVATE_KEY` | SSH-ключ (ed25519) для доступа к VPS |
 | Secret | `VPS_HOST` | Hostname или IP VPS |
 | Secret | `VPS_SSH_USER` | SSH-пользователь на VPS (`root`) |
-| Secret | `ACME_EMAIL` | Email Let's Encrypt (нужен только для первого деплоя на «свежий» VPS; если Traefik уже работает — не нужен) |
 | Variable | `DOCS_HOSTNAME` | Публичный hostname сайта (например `docs.example.com`) — не чувствительное, поэтому variable, а не secret |
 
 ## VPS prerequisites
 
-Скрипт рассчитан на VPS, уже подготовленный предыдущими деплоями, но **сам добирает недостающее**:
-- `slovo` system user (создаст, если нет);
-- buildx builder `slovo-constrained` (создаст, если нет);
-- Traefik `slovo-traefik.service` (провижинит, если не активен — при наличии `ACME_EMAIL`).
+VPS должен быть подготовлен внешним `slovo-propovedi-playbook` (`just setup-all`) **до** первого деплоя. Скрипт эти компоненты только проверяет и падает с ошибкой, если чего-то нет:
+- Docker (установлен и запущен);
+- `slovo` system user/group (роль `slovo-base`);
+- buildx builder `slovo-constrained` (роль `slovo-buildx`);
+- Traefik `slovo-traefik.service` активен (роль `traefik`);
+- Docker-сеть `traefik`.
 
 ## Связанные документы
 

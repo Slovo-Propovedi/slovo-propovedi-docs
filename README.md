@@ -125,6 +125,12 @@ git tag v1.0.0
 git push origin v1.0.0
 ```
 
+> **Boundary.** `vps-deploy.sh` owns only the `slovo-docs` container and its own `slovo-docs` Docker
+> network. Shared infrastructure — Docker, the `slovo` user/group, the `slovo-constrained` buildx
+> builder, Traefik (`slovo-traefik.service`) and the `traefik` network — is owned by the external
+> `slovo-propovedi-playbook` and must be provisioned first (`just setup-all`). The script only
+> verifies it and fails fast if anything is missing.
+
 ### Required Forgejo secrets
 
 Settings → Actions → Secrets.
@@ -134,7 +140,6 @@ Settings → Actions → Secrets.
 | `VPS_SSH_PRIVATE_KEY` | SSH private key (ed25519) for root access to the VPS |
 | `VPS_HOST` | VPS hostname or IP |
 | `VPS_SSH_USER` | SSH user on the VPS (`root`) |
-| `ACME_EMAIL` | Email for Let's Encrypt certificates (required for first deploy to a fresh VPS; not needed if Traefik is already running) |
 
 ### Required Forgejo variables
 
@@ -146,11 +151,14 @@ Settings → Actions → Variables.
 
 ### VPS prerequisites
 
-The deploy script assumes the VPS has already been provisioned by the provisioning playbook:
+The VPS must already be provisioned by the external `slovo-propovedi-playbook` (`just setup-all`)
+before the first deploy. The script verifies these and errors out if any is missing:
 
-- `slovo` system user exists
+- Docker is installed and running
+- `slovo` system user/group exists
 - Docker buildx builder `slovo-constrained` exists
 - Traefik reverse proxy is running (`slovo-traefik.service`)
+- the `traefik` Docker network exists
 
 ## Repository layout
 
