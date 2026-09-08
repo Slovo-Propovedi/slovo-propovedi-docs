@@ -20,5 +20,15 @@
       "matchUpdateTypes": ["minor", "patch"],
       "groupName": "devDependencies (non-major)"
     }
+  ],
+  "customManagers": [
+    {
+      "customType": "regex",
+      "description": "swagger-ui-dist version pinned as an ARG in the Dockerfile (the site's main dependency; not in package.json).",
+      "managerFilePatterns": ["/(^|/)Dockerfile$/"],
+      "matchStrings": ["ARG SWAGGER_UI_VERSION=(?<currentValue>\\S+)"],
+      "depNameTemplate": "swagger-ui-dist",
+      "datasourceTemplate": "npm"
+    }
   ]
 }
