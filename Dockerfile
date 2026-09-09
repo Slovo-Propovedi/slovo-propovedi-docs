@@ -5,7 +5,7 @@
 # ---------------------------------------------------------------------------
 FROM node:24-alpine AS swagger-ui-build
 
-ARG SWAGGER_UI_VERSION=5.32.12
+ARG SWAGGER_UI_VERSION=5.32.15
 
 WORKDIR /build
 
