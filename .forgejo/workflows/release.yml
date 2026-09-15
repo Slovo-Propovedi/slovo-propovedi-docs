@@ -68,6 +68,7 @@ jobs:
           VPS_SSH_USER: ${{ secrets.VPS_SSH_USER }}
           DEPLOY_TAG: ${{ github.ref_name }}
           DOCS_HOSTNAME: ${{ vars.DOCS_HOSTNAME }}
+          BACKEND_API_HOSTNAME: ${{ vars.BACKEND_API_HOSTNAME }}
         run: |
           SSH_TARGET="$VPS_SSH_USER@$VPS_HOST"
           # Transfer source code (runner already has the tagged checkout)
@@ -81,6 +82,7 @@ jobs:
             "chmod +x /tmp/vps-deploy.sh && \
              DEPLOY_TAG='$DEPLOY_TAG' \
              DOCS_HOSTNAME='$DOCS_HOSTNAME' \
+             BACKEND_API_HOSTNAME='$BACKEND_API_HOSTNAME' \
              bash /tmp/vps-deploy.sh"
 
       - name: Extract changelog section

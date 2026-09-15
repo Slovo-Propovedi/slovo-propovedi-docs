@@ -22,6 +22,7 @@ set -euo pipefail
 # --- Configuration (override via env) ---
 DEPLOY_TAG="${DEPLOY_TAG:?ERROR: DEPLOY_TAG is required (e.g. v1.0.0)}"
 DOCS_HOSTNAME="${DOCS_HOSTNAME:?ERROR: DOCS_HOSTNAME is required (e.g. docs.example.com)}"
+BACKEND_API_HOSTNAME="${BACKEND_API_HOSTNAME:-api.slovo-propovedi.ru}"
 BASE_PATH="${BASE_PATH:-/slovo/docs}"
 SRC_PATH="${SRC_PATH:-/slovo/docs/container-src}"
 BUILDER_NAME="${BUILDER_NAME:-slovo-constrained}"
@@ -137,6 +138,7 @@ docker buildx build \
   --builder="$BUILDER_NAME" \
   --load \
   --tag="$IMAGE_NAME" \
+  --build-arg BACKEND_API_HOSTNAME="$BACKEND_API_HOSTNAME" \
   "$SRC_PATH"
 
 # --- 6. Write systemd unit ---
