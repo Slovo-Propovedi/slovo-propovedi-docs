@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.17.0] - 2026-09-15
+
+### Added
+
+- Add .env.example and load it in make prod-build
+- Bake BACKEND_API_HOSTNAME into the nginx CSP
+
+### Fixed
+
+- Un-ignore .env.example (caught by the .env.* glob)
+- Expose BACKEND_API_HOSTNAME as a make prod-build override
+
 ## [0.16.0] - 2026-09-08
 
 ### Added
@@ -185,6 +197,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - VPS deployment script (systemd service, Traefik labels, Docker buildx)
 - Version bump script for package.json and openAPI.yaml
 
+[0.17.0]: https://git.lightnode.ru/Slovo_Propovedi/slovo-propovedi-docs/src/tag/v0.17.0
 [0.16.0]: https://git.lightnode.ru/Slovo_Propovedi/slovo-propovedi-docs/src/tag/v0.16.0
 [0.15.2]: https://git.lightnode.ru/Slovo_Propovedi/slovo-propovedi-docs/src/tag/v0.15.2
 [0.15.1]: https://git.lightnode.ru/Slovo_Propovedi/slovo-propovedi-docs/src/tag/v0.15.1
