@@ -6,7 +6,7 @@
 # ---------------------------------------------------------------------------
 # Stage 1: official working v5 editor assets (guaranteed-good build)
 # ---------------------------------------------------------------------------
-FROM swaggerapi/swagger-editor:v5.8.4 AS editor-assets
+FROM swaggerapi/swagger-editor:v5.8.6 AS editor-assets
 
 # ---------------------------------------------------------------------------
 # Stage 2: save-proxy + patched editor SPA
