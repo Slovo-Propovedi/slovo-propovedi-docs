@@ -9,6 +9,7 @@ PROD_NAME   := slovo-propovedi-docs
 PROD_PORT   := 8080
 EDITOR_PORT := 8081
 SWAGGER_UI_VERSION ?=
+BACKEND_API_HOSTNAME ?=
 
 .PHONY: help
 help: ## Show this list of available targets
@@ -58,8 +59,11 @@ dev-open: ## Open the dev editor in the default browser
 ## ---- Production (read-only Swagger UI) ----
 
 .PHONY: prod-build
-prod-build: ## Build the production Swagger UI image (override: make prod-build SWAGGER_UI_VERSION=5.40.0)
-	docker build $(if $(SWAGGER_UI_VERSION),--build-arg SWAGGER_UI_VERSION=$(SWAGGER_UI_VERSION)) -t $(PROD_IMAGE) .
+prod-build: ## Build the production Swagger UI image (override: make prod-build SWAGGER_UI_VERSION=5.40.0 BACKEND_API_HOSTNAME=custom.example.com)
+	docker build \
+		$(if $(SWAGGER_UI_VERSION),--build-arg SWAGGER_UI_VERSION=$(SWAGGER_UI_VERSION)) \
+		$(if $(BACKEND_API_HOSTNAME),--build-arg BACKEND_API_HOSTNAME=$(BACKEND_API_HOSTNAME)) \
+		-t $(PROD_IMAGE) .
 
 .PHONY: prod-up
 prod-up: ## Run the production container (detached) → http://localhost:8080

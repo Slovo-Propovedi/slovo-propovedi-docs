@@ -28,9 +28,16 @@ The build downloads `swagger-ui-dist` (default `5.32.12`, overridable via the
 `SWAGGER_UI_VERSION` build arg) and bundles it with the custom `index.html`, `openAPI.yaml`,
 and `nginx.conf` into a minimal `nginx:alpine` image. There is no Node.js runtime in the final image.
 
+The backend API hostname baked into the nginx CSP (default `api.slovo-propovedi.ru`) is
+overridable the same way, via the `BACKEND_API_HOSTNAME` build arg.
+
 ```bash
-# With a specific Swagger UI version
-docker build --build-arg SWAGGER_UI_VERSION=5.32.12 -t slovo-propovedi-docs .
+# With a specific Swagger UI version and/or backend hostname
+docker build --build-arg SWAGGER_UI_VERSION=5.32.12 --build-arg BACKEND_API_HOSTNAME=api.example.com \
+  -t slovo-propovedi-docs .
+
+# Or via the Makefile shortcut:
+make prod-build SWAGGER_UI_VERSION=5.32.12 BACKEND_API_HOSTNAME=api.example.com
 ```
 
 ## Run it locally
