@@ -2,6 +2,11 @@
 #
 # Wraps the dev OpenAPI editor (docker compose) and the production Swagger UI
 # image (docker) into short targets. Run `make help` to list them.
+#
+# Copy .env.example to .env to set local overrides (e.g. BACKEND_API_HOSTNAME)
+# without typing them on every `make` invocation. `make` variables passed on
+# the command line still win over .env (see GNU Make variable precedence).
+-include .env
 
 DEV_COMPOSE := docker compose -f docker-compose.dev.yml
 PROD_IMAGE  := slovo-propovedi-docs
