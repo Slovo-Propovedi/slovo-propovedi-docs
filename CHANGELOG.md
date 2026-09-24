@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.18.0] - 2026-09-24
+
+### Added
+
+- Add sort and order query params to sermons and playlists lists
+- Add file-orphan management endpoint
+- Notify session when model failover activates
+- Profile plugin with adaptive model failover
+- Profile plugin with adaptive model failover
+
+### Fixed
+
+- Change reviewer model in opencode profile configs
+- Bound failover error-body read to 2KB
+- Pin markdown-defined subagents via frontmatter, not registry
+
 ## [0.17.0] - 2026-09-15
 
 ### Added
@@ -197,6 +213,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - VPS deployment script (systemd service, Traefik labels, Docker buildx)
 - Version bump script for package.json and openAPI.yaml
 
+[0.18.0]: https://git.lightnode.ru/Slovo_Propovedi/slovo-propovedi-docs/src/tag/v0.18.0
 [0.17.0]: https://git.lightnode.ru/Slovo_Propovedi/slovo-propovedi-docs/src/tag/v0.17.0
 [0.16.0]: https://git.lightnode.ru/Slovo_Propovedi/slovo-propovedi-docs/src/tag/v0.16.0
 [0.15.2]: https://git.lightnode.ru/Slovo_Propovedi/slovo-propovedi-docs/src/tag/v0.15.2
