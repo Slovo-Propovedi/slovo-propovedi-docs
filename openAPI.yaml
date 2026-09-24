@@ -81,6 +81,40 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/AllFilesResponse"
+  /files/orphans:
+    get:
+      operationId: AppController_getOrphanedFiles
+      summary: Получить список осиротевших файлов
+      description: "Возвращает объекты bucket (изображения и аудио/текст), не привязанные ни к одной проповеди (audioUrl/textFileUrl) и не используемые как обложки (artwork проповедей и плейлистов)."
+      parameters: []
+      responses:
+        "200":
+          description: Список осиротевших файлов
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OrphanedFilesResponse"
+      tags:
+        - Files
+      security:
+        - bearer: []
+  /files/orphans/cleanup:
+    post:
+      operationId: AppController_cleanupOrphanedFiles
+      summary: Удалить осиротевшие аудио и текстовые файлы
+      description: "Идемпотентно удаляет ТОЛЬКО осиротевшие аудио/текстовые объекты (.mp3, .pdf, .fb2). Изображения не удаляются никогда — обложками управляют вручную из каталога. Ошибка удаления отдельного объекта не роняет запрос (best-effort)."
+      parameters: []
+      responses:
+        "200":
+          description: Результат очистки
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CleanupOrphansResponse"
+      tags:
+        - Files
+      security:
+        - bearer: []
   /files/{fileName}/stream-url:
     get:
       operationId: AppController_getStreamUrl
@@ -119,6 +153,29 @@ paths:
                 $ref: "#/components/schemas/IFileResponseDto"
       tags:
         - Files
+    delete:
+      operationId: AppController_removeFile
+      summary: Удалить файл-изображение
+      description: "Удаляет объект-изображение (JPEG/PNG/WebP) из bucket. Если изображение используется как обложка (artwork) проповеди или плейлиста — 409 Conflict."
+      parameters:
+        - name: fileName
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Файл удалён
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StatusFileResponse"
+        "409":
+          description: Изображение используется как обложка проповеди или плейлиста и не может быть удалено
+      tags:
+        - Files
+      security:
+        - bearer: []
   /section:
     post:
       operationId: SectionController_create
@@ -859,11 +916,64 @@ components:
         lastModified:
           type: [string, 'null']
           format: date-time
+        used:
+          type: boolean
+          description: "true, если объект используется как обложка (artwork) какой-либо проповеди или плейлиста"
       required:
         - fileName
         - fileUrl
         - size
         - lastModified
+        - used
+
+    OrphanedFilesResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        orphaned:
+          type: array
+          items:
+            $ref: "#/components/schemas/FileMetadataDto"
+        count:
+          type: integer
+      required:
+        - orphaned
+        - count
+
+    CleanupOrphansResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        deleted:
+          type: array
+          items:
+            type: string
+          description: "Имена удалённых объектов"
+        failed:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            properties:
+              fileName:
+                type: string
+              reason:
+                type: string
+            required:
+              - fileName
+              - reason
+      required:
+        - deleted
+        - failed
+
+    StatusFileResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        status:
+          type: string
+      required:
+        - status
 
     AllFilesResponse:
       type: object
