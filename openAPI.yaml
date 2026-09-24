@@ -85,8 +85,17 @@ paths:
     get:
       operationId: AppController_getOrphanedFiles
       summary: Получить список осиротевших файлов
-      description: "Возвращает объекты bucket (изображения и аудио/текст), не привязанные ни к одной проповеди (audioUrl/textFileUrl) и не используемые как обложки (artwork проповедей и плейлистов)."
-      parameters: []
+      description: "Возвращает объекты bucket (изображения и аудио/текст), не привязанные ни к одной проповеди (audioUrl/textFileUrl) и не используемые как обложки (artwork проповедей и плейлистов). Скан bucket стримится и останавливается, как только собрано `limit` осиротевших файлов, поэтому ответ ограничен `limit`, а память не растёт с размером bucket."
+      parameters:
+        - name: limit
+          required: false
+          in: query
+          description: Максимальное число возвращаемых осиротевших файлов; скан bucket останавливается при достижении лимита. По умолчанию 500, максимум 5000.
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 5000
+            default: 500
       responses:
         "200":
           description: Список осиротевших файлов
