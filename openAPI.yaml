@@ -379,9 +379,30 @@ paths:
             type: integer
             minimum: 1
             maximum: 100
+        - name: sort
+          required: false
+          in: query
+          description: Вариант сортировки. `date` — по убыванию id (порядок загрузки), `title` — по названию, `section` — по названию раздела (плейлисты без раздела — в конце). Игнорируется при поиске (сортировка по релевантности). Применяется только к страничной выдаче (page/limit) и полной выдаче; несовместимо с take/cursor.
+          schema:
+            type: string
+            enum:
+              - date
+              - title
+              - section
+            default: date
+        - name: order
+          required: false
+          in: query
+          description: Направление сортировки. Для `sort=date` по умолчанию `desc`, для остальных — `asc`.
+          schema:
+            type: string
+            enum:
+              - asc
+              - desc
+            default: desc
       responses:
         "200":
-          description: Список плейлистов; count — общее число; сортировка по убыванию id (стабильный порядок; id — UUID, не хронология); при поиске — по релевантности, затем по убыванию id
+          description: Список плейлистов; count — общее число; сортировка — по параметрам sort/order (sort=date — по убыванию id), при поиске (search) — по релевантности
           content:
             application/json:
               schema:
@@ -546,9 +567,31 @@ paths:
             type: integer
             minimum: 1
             maximum: 100
+        - name: sort
+          required: false
+          in: query
+          description: Вариант сортировки. `date` — по убыванию id (порядок загрузки), `title` — по названию, `artist` — по автору, `playlist` — по названию плейлиста (проповеди без плейлиста — в конце). Игнорируется при поиске (сортировка по релевантности). Применяется только к страничной выдаче (page/limit) и полной выдаче; несовместимо с take/cursor.
+          schema:
+            type: string
+            enum:
+              - date
+              - title
+              - artist
+              - playlist
+            default: date
+        - name: order
+          required: false
+          in: query
+          description: Направление сортировки. Для `sort=date` по умолчанию `desc`, для остальных — `asc`.
+          schema:
+            type: string
+            enum:
+              - asc
+              - desc
+            default: desc
       responses:
         "200":
-          description: Список проповедей с количеством; в оффсетном режиме count — общее число записей, nextCursor — null
+          description: Список проповедей с количеством; сортировка — по параметрам sort/order (sort=date — по убыванию id), при поиске (search) — по релевантности; в оффсетном режиме count — общее число записей, nextCursor — null
           content:
             application/json:
               schema:
