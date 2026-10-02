@@ -1064,6 +1064,7 @@ components:
         isDescriptionTitleOnSlideLarge:
           type: boolean
         whereIsSlideTitleLocated:
+          description: 'Расположение заголовка на карточке. Значение `bothOnAndUnder` устарело и не используется: новые секции должны использовать `on` или `under`; существующие значения `bothOnAndUnder` клиент читает как `under`.'
           type: string
           enum:
             - "on"
@@ -1109,6 +1110,7 @@ components:
           type: boolean
           default: false
         whereIsSlideTitleLocated:
+          description: 'Расположение заголовка на карточке. Значение `bothOnAndUnder` устарело и не используется: новые секции должны использовать `on` или `under`; существующие значения `bothOnAndUnder` клиент читает как `under`.'
           type: string
           enum:
             - "on"
@@ -1391,6 +1393,7 @@ components:
         isDescriptionTitleOnSlideLarge:
           type: boolean
         whereIsSlideTitleLocated:
+          description: 'Расположение заголовка на карточке. Значение `bothOnAndUnder` устарело и не используется: новые секции должны использовать `on` или `under`; существующие значения `bothOnAndUnder` клиент читает как `under`.'
           type: string
           enum:
             - "on"
