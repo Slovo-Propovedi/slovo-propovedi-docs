@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.19.0] - 2026-10-06
+
+### Added
+
+- Invidious instances management api
+
+## [0.18.3] - 2026-10-05
+
 ## [0.18.2] - 2026-10-02
 
 ## [0.18.1] - 2026-09-24
@@ -221,6 +229,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - VPS deployment script (systemd service, Traefik labels, Docker buildx)
 - Version bump script for package.json and openAPI.yaml
 
+[0.19.0]: https://git.lightnode.ru/Slovo_Propovedi/slovo-propovedi-docs/src/tag/v0.19.0
+[0.18.3]: https://git.lightnode.ru/Slovo_Propovedi/slovo-propovedi-docs/src/tag/v0.18.3
 [0.18.2]: https://git.lightnode.ru/Slovo_Propovedi/slovo-propovedi-docs/src/tag/v0.18.2
 [0.18.1]: https://git.lightnode.ru/Slovo_Propovedi/slovo-propovedi-docs/src/tag/v0.18.1
 [0.18.0]: https://git.lightnode.ru/Slovo_Propovedi/slovo-propovedi-docs/src/tag/v0.18.0
