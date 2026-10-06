@@ -1,7 +1,7 @@
 openapi: 3.2.0
 info:
   title: API — Слово.Проповеди
-  version: 0.18.1
+  version: 0.19.0
   description: |
     REST API сервиса «Слово.Проповеди».
     Позволяет управлять проповедями, плейлистами, разделами, загружать файлы и работать с пользователями.
@@ -23,6 +23,8 @@ tags:
     description: Управление плейлистами
   - name: Users
     description: Управление пользователями (админами)
+  - name: Invidious
+    description: Управление Invidious-инстансами для импорта проповедей
   - name: Basic
     description: Базовые роуты
 paths:
@@ -43,8 +45,8 @@ paths:
   /files:
     post:
       operationId: AppController_uploadFile
-      summary: "Загрузить файл (изображение, аудио MP3, PDF, FB2)"
-      description: "Файл сохраняется в MinIO. Допустимые форматы: JPEG, PNG, WebP (изображения), MP3 (аудио), PDF, FB2 (документы)."
+      summary: "Загрузить файл (изображение, аудио MP3/M4A, PDF, FB2)"
+      description: "Файл сохраняется в MinIO. Допустимые форматы: JPEG, PNG, WebP (изображения), MP3/M4A (аудио), PDF, FB2 (документы)."
       parameters: []
       requestBody:
         required: true
@@ -56,7 +58,7 @@ paths:
                 file:
                   type: string
                   format: binary
-                  description: "Допустимые форматы — JPEG, PNG, WebP, MP3, PDF, FB2. Другие форматы будут отклонены."
+                  description: "Допустимые форматы — JPEG, PNG, WebP, MP3, M4A, PDF, FB2. Другие форматы будут отклонены."
       responses:
         "200":
           description: Файл успешно загружен
@@ -111,7 +113,7 @@ paths:
     post:
       operationId: AppController_cleanupOrphanedFiles
       summary: Удалить осиротевшие аудио и текстовые файлы
-      description: "Идемпотентно удаляет ТОЛЬКО осиротевшие аудио/текстовые объекты (.mp3, .pdf, .fb2). Изображения не удаляются никогда — обложками управляют вручную из каталога. Ошибка удаления отдельного объекта не роняет запрос (best-effort)."
+      description: "Идемпотентно удаляет ТОЛЬКО осиротевшие аудио/текстовые объекты (.mp3, .m4a, .pdf, .fb2). Изображения не удаляются никогда — обложками управляют вручную из каталога. Ошибка удаления отдельного объекта не роняет запрос (best-effort)."
       parameters: []
       responses:
         "200":
@@ -921,6 +923,49 @@ paths:
       responses:
         "204":
           description: Пароль изменён
+  /invidious-instances:
+    get:
+      tags:
+        - Invidious
+      operationId: InvidiousInstancesController_findAll
+      summary: Список Invidious-инстансов для импорта проповедей
+      description: "Возвращает сохранённый список Invidious-инстансов в порядке отображения в UI. Доступно только администраторам."
+      parameters: []
+      security:
+        - bearer: []
+      responses:
+        "200":
+          description: Список Invidious-инстансов
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/InvidiousInstance"
+    put:
+      tags:
+        - Invidious
+      operationId: InvidiousInstancesController_replace
+      summary: Заменить список Invidious-инстансов (полная замена)
+      description: "Полностью заменяет сохранённый список: отсутствующие в запросе адреса удаляются, новые добавляются в порядке массива. Дубликаты запрещены, каждый адрес должен начинаться с https://. Доступно только администраторам."
+      parameters: []
+      security:
+        - bearer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReplaceInvidiousInstancesRequest"
+      responses:
+        "200":
+          description: Обновлённый список Invidious-инстансов
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/InvidiousInstance"
 components:
   securitySchemes:
     bearer:
@@ -1064,6 +1109,7 @@ components:
         isDescriptionTitleOnSlideLarge:
           type: boolean
         whereIsSlideTitleLocated:
+          description: 'Расположение заголовка на карточке. Значение `bothOnAndUnder` устарело и не используется: новые секции должны использовать `on` или `under`; существующие значения `bothOnAndUnder` клиент читает как `under`.'
           type: string
           enum:
             - "on"
@@ -1109,6 +1155,7 @@ components:
           type: boolean
           default: false
         whereIsSlideTitleLocated:
+          description: 'Расположение заголовка на карточке. Значение `bothOnAndUnder` устарело и не используется: новые секции должны использовать `on` или `under`; существующие значения `bothOnAndUnder` клиент читает как `under`.'
           type: string
           enum:
             - "on"
@@ -1391,6 +1438,7 @@ components:
         isDescriptionTitleOnSlideLarge:
           type: boolean
         whereIsSlideTitleLocated:
+          description: 'Расположение заголовка на карточке. Значение `bothOnAndUnder` устарело и не используется: новые секции должны использовать `on` или `under`; существующие значения `bothOnAndUnder` клиент читает как `under`.'
           type: string
           enum:
             - "on"
@@ -1809,3 +1857,27 @@ components:
       required:
         - accessToken
         - refreshToken
+    InvidiousInstance:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: integer
+          description: Идентификатор записи
+        url:
+          type: string
+          description: Полный https-адрес Invidious-инстанса
+      required:
+        - id
+        - url
+    ReplaceInvidiousInstancesRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        urls:
+          type: array
+          items:
+            type: string
+          description: Полные https-адреса инстансов; порядок соответствует порядку в UI, дубликаты запрещены
+      required:
+        - urls
