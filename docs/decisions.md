@@ -14,7 +14,8 @@
 | Супервизор | systemd | Процессный супервизор для одного контейнера: `Restart=always`, авто-старт, журнал |
 | Сборка образов | Docker buildx (билдер `slovo-constrained`) | Ресурсные лимиты (1g, cpu-quota 80000), чтобы сборка не «съедала» VPS |
 | Валидация YAML | `js-yaml` `^4.1.0` | `npm run validate:openapi` — парсинг `openAPI.yaml` как YAML (exit 1 при ошибке) |
-| Pre-commit | `husky` `^9.1.7` | Запуск `validate:openapi` на каждый коммит |
+| Git-хуки | `husky` `^9.1.7` | Запуск `pre-commit` (`validate:openapi`) и `commit-msg` (DCO + commitlint) на каждый коммит |
+| Commit-конвенция | `@commitlint/cli` `^21.2.3` + `@commitlint/config-conventional` `^21.2.3` | Machine-enforced проверка conventional-типов, заголовка ≤ 100 и signoff в `.husky/commit-msg`; ранее было договорённостью (см. [`conventions.md`](./conventions.md)) |
 | Dev-редактор | Swagger Editor v5 (`swaggerapi/swagger-editor:v5.8.4`) | Локальное редактирование `openAPI.yaml` с живой валидацией; только для разработки (`editor/`) |
 | CI/CD | Forgejo Actions | CI (валидация) + Release (деплой, Forgejo Release); живёт в репозитории (см. [`ci-cd.md`](./ci-cd.md)) |
 | Пакетный менеджер | npm | Установка зависимостей, скрипты (`npm ci`, `npm run ...`) |
@@ -35,7 +36,7 @@
 - **CORS:** `Access-Control-Allow-Origin "*"` — разрешить фронтенду/мобильному кодогенератору (Orval) забирать спецификацию; методы ограничены `GET, OPTIONS`.
 - **CSP `connect-src`:** whitelist `'self' http://localhost:3000 https://api.slovo-propovedi.ru`.
 - **Скрытые файлы:** `deny all` в nginx.
-- **Коммиты:** conventional commits + DCO signoff (`git commit -s`); заголовок ≤ 100 символов.
+- **Коммиты:** conventional commits + DCO signoff; заголовок ≤ 100 символов. Проверяется commitlint через `.husky/commit-msg`; trailer `Signed-off-by:` проставляет хук автоматически (`git commit -s` вручную не нужен).
 - **Пакетный менеджер:** npm (не yarn).
 - **Согласованность версии:** тег `v*` = `package.json` version = `openAPI.yaml` `info.version` (проверяется Release-workflow; `bump-version.mjs` обновляет всё сразу).
 - **CI tag guard:** `if: github.ref_type != 'tag'` (некоторые версии Forgejo запускают workflow на теги несмотря на branches-фильтр).

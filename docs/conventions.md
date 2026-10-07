@@ -1,13 +1,13 @@
 # Договорённости (conventions)
 
-Этот документ описывает **процессные договорённости людей** — то, что нельзя (или нецелесообразно) проверить машиной. Машино-проверяемые правила (валидация YAML, стиль) живут в husky/скриптах и задокументированы в [`AGENTS.md`](../AGENTS.md) — здесь они не дублируются.
+Этот документ описывает **процессные договорённости людей** — то, что нельзя (или нецелесообразно) проверить машиной. Машино-проверяемые правила (валидация YAML, стиль, conventional-коммиты) живут в husky/скриптах и задокументированы в [`AGENTS.md`](../AGENTS.md) — здесь они не дублируются.
 
 ## Git
 
 - **Ветки:** feature-ветки от `main`. Именование — на усмотрение команды, но MR должен быть маленьким и самодостаточным.
-- **Формат коммита:** conventional commits. Типы и правила — в [`AGENTS.md`](../AGENTS.md) → «Commit Convention» (`feat`, `fix`, `refactor`, `test`, `docs`, `style`, `chore`, `build`, `ci`, `perf`, `revert`). Заголовок — максимум 100 символов.
-- **Signoff (DCO):** каждый коммит подписывается `git commit -s`. Это требование, а не опция.
-- **Pre-commit:** Husky прогоняет `npm run validate:openapi` — блокирует коммит при невалидном `openAPI.yaml` (см. [`AGENTS.md`](../AGENTS.md) → «Pre-commit Hooks»). В CI хуки отключены через `HUSKY: 0`.
+- **Формат коммита:** conventional commits. Типы и правила — в [`AGENTS.md`](../AGENTS.md) → «Commit Convention» (`feat`, `fix`, `refactor`, `test`, `docs`, `style`, `chore`, `build`, `ci`, `perf`, `revert`). Заголовок — максимум 100 символов. Теперь это machine-enforced: commitlint проверяет сообщение в `.husky/commit-msg` (конфиг `commitlint.config.mjs`).
+- **Signoff (DCO):** каждый коммит несёт trailer `Signed-off-by:`. Trailer автоматически проставляет хук `.husky/commit-msg`, поэтому вручную `git commit -s` не требуется — хук перезаписывает/добавляет его сам.
+- **Git-хуки:** Husky прогоняет `pre-commit` (`npm run validate:openapi` — блокирует коммит при невалидном `openAPI.yaml`) и `commit-msg` (DCO + commitlint — блокирует несоответствие conventional-формату, длине заголовка и наличию signoff). См. [`AGENTS.md`](../AGENTS.md) → «Git Hooks». Обойти хуки можно флагом `--no-verify` — не рекомендуется, это допустимо только для аварийного восстановления. В CI хуки отключены через `HUSKY: 0`.
 - **MR-процесс:** каждый MR сопровождается описанием «что и зачем», ссылками на изменённые файлы и на обновлённые документы `docs/`.
 
 ## Работа с AI-агентами

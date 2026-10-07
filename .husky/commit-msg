@@ -1,0 +1,48 @@
+#!/usr/bin/env sh
+
+# Husky commit-msg hook: DCO auto-sign + commitlint validation.
+# Runs after the editor saves the commit message and receives the message
+# file path as $1. Bypass with --no-verify (discouraged, see docs/conventions.md).
+
+set -e
+
+# 1. DCO auto-sign: ensure a Signed-off-by trailer with the correct format.
+# Strips any existing Signed-off-by line (it may be malformed) and re-adds
+# one with the blank-line separator git trailers require. Works with any git
+# client (lazygit, VS Code, CLI, IDEs). Must run before commitlint, because
+# commitlint's signed-off-by rule rejects messages that lack the trailer.
+
+MSG_FILE="$1"
+# `|| true`: git config exits 1 when the key is unset. Under `set -e` that
+# would abort the hook before the friendly guard below could run.
+NAME=$(git config user.name || true)
+EMAIL=$(git config user.email || true)
+
+if [ -z "$NAME" ] || [ -z "$EMAIL" ]; then
+  echo "❌ Cannot add Signed-off-by: git user.name or user.email not configured."
+  echo "   Fix with:"
+  echo "     git config user.name 'Your Name'"
+  echo "     git config user.email 'your.email@example.com'"
+  exit 1
+fi
+
+# Strip any existing Signed-off-by line: a user may have added it manually
+# without the blank-line separator, which fails DCO on the server.
+# `-i.bak` instead of `-i`: BSD sed (macOS) requires a suffix after -i and
+# rejects GNU's bare `-i`, which would fail every commit on macOS.
+sed -i.bak '/^Signed-off-by:/d' "$MSG_FILE" && rm -f "$MSG_FILE.bak"
+
+# Remove trailing blank lines and ensure exactly one trailing newline.
+# `sed '/^$/d'` would remove ALL blank lines, which is too aggressive — only
+# trailing whitespace must be cleaned. perl is used for portability.
+# `\n*` matches zero-or-more, so a message with no trailing newline still ends
+# up with exactly one before the blank-line separator is added.
+perl -i -p0e 's/\n*$/\n/' "$MSG_FILE"
+
+# Add the blank-line separator + Signed-off-by trailer.
+echo "" >> "$MSG_FILE"
+echo "Signed-off-by: $NAME <$EMAIL>" >> "$MSG_FILE"
+
+# 2. Validate conventional-commit format + signed-off-by trailer.
+# No `|| exit 1`: set -e already aborts on a non-zero commitlint exit.
+npx --no-install commitlint --edit "$MSG_FILE"

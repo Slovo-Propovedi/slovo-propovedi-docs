@@ -63,6 +63,8 @@ editor/               # Dev editor internals (save-proxy server, patch, package.
 scripts/              # validate-openapi-yaml.mjs, bump-version.mjs, vps-deploy.sh
 .forgejo/workflows/   # CI + Release Forgejo Actions workflows
 .husky/pre-commit     # Runs validate:openapi on commit
+.husky/commit-msg     # Auto-signs DCO trailer + runs commitlint on commit
+commitlint.config.mjs # commitlint rules (conventional types, 100-char header, signoff)
 ```
 
 ## Documentation (docs/)
@@ -114,14 +116,25 @@ scripts/              # validate-openapi-yaml.mjs, bump-version.mjs, vps-deploy.
 - **JS-скрипты (`.mjs`):** ESM (`import`); консистентный стиль. `scripts/validate-openapi-yaml.mjs` использует двойные кавычки, `scripts/bump-version.mjs` — одинарные без точек с запятой; сохраняй стиль существующего файла.
 - **Все инлайн-комментарии должны объяснять WHY, а не WHAT.**
 
-## Pre-commit Hooks
+## Git Hooks
 
-Husky запускает `npm run validate:openapi` на каждый коммит — блокирует коммит, если `openAPI.yaml` не валидный YAML:
+Husky запускает два хука: `pre-commit` (валидация спецификации) и `commit-msg` (DCO + commitlint).
+
+**`pre-commit`** прогоняет `npm run validate:openapi` — блокирует коммит, если `openAPI.yaml` не валидный YAML:
 
 ```bash
 # .husky/pre-commit
 npm run validate:openapi
 ```
+
+**`commit-msg`** сначала автоматически проставляет trailer `Signed-off-by: <user.name> <user.email>` (удаляя старый и добавляя корректный разделитель-пустую строку), затем проверяет сообщение через commitlint:
+
+```bash
+# .husky/commit-msg
+npx --no-install commitlint --edit "$1"
+```
+
+commitlint (конфиг `commitlint.config.mjs`) machine-enforced проверяет conventional-типы, длину заголовка ≤ 100 и наличие `Signed-off-by:`. Обойти оба хука можно флагом `--no-verify` — не рекомендуется (см. [`docs/conventions.md`](docs/conventions.md)).
 
 В CI переменная окружения `HUSKY: 0` отключает установку husky-хуков (хуки нужны только локально).
 
@@ -141,7 +154,7 @@ Conventional commits с типами:
 - `perf` - Performance improvements
 - `revert` - Reverting changes
 
-**Signoff (DCO) обязателен:** `git commit -s`. Максимальная длина заголовка — 100 символов.
+**Signoff (DCO) обязателен:** `git commit -s`. Максимальная длина заголовка — 100 символов. Оба правила machine-enforced через commitlint в `.husky/commit-msg` (trailer `Signed-off-by:` при этом проставляется хуком автоматически, вручную `-s` не нужен).
 
 ## Key Dependencies
 
@@ -149,8 +162,10 @@ Conventional commits с типами:
 |------------------|------------|-------|
 | `swagger-ui-dist` (`5.32.12`) | Статические ассеты Swagger UI | Только на этапе сборки (build-time), переопределяется через build arg |
 | `nginx:alpine` | Рантайм: раздача статики на порту 8080 | Рантайм (prod) |
-| `js-yaml` (`^4.1.0`) | Валидация YAML в `validate:openapi` | Dev-инструмент |
-| `husky` (`^9.1.7`) | Pre-commit хуки | Dev-инструмент |
+| `js-yaml` (`^5.4.3`) | Валидация YAML в `validate:openapi` | Dev-инструмент |
+| `husky` (`^9.1.7`) | Git-хуки (`pre-commit`, `commit-msg`) | Dev-инструмент |
+| `@commitlint/cli` (`^21.2.3`) | Проверка conventional-коммитов в `.husky/commit-msg` | Dev-инструмент |
+| `@commitlint/config-conventional` (`^21.2.3`) | Базовый набор правил conventional commits для commitlint | Dev-инструмент |
 | Swagger Editor v5 (`editor/`) | Dev-редактор для `openAPI.yaml` | Только для разработки (`docker-compose.dev.yml`) |
 
 ## Package Manager
@@ -167,4 +182,4 @@ Conventional commits с типами:
 3. **`bump-version.mjs` коммитит (`git commit -s`) И создаёт тег (`git tag -a`) автоматически.** Проверь diff (`git diff --cached`) перед тем как запускать; после — запуши вручную: `git push --tags origin main`. Скрипт также верифицирует, что тег реально создан (`git tag -a` иногда выходит с 0, но не создаёт ref).
 4. **`openAPI.yaml` `info.version` должна совпадать с `package.json` version.** Release-workflow проверяет это (тег vs `package.json`). Скрипт `bump-version.mjs` обновляет оба места.
 5. **Некоторые версии Forgejo запускают CI-workflow и на push тегов** несмотря на фильтр `branches: [main]` — поэтому в `ci.yml` стоит явный guard `if: github.ref_type != 'tag'`.
-6. **Проект не использует commitlint** — соблюдение conventional commits и signoff — договорённость, а не машино-проверяемое правило (см. [`docs/conventions.md`](docs/conventions.md)).
+6. **commitlint включён через `.husky/commit-msg`** — conventional-типы, заголовок ≤ 100 символов и trailer `Signed-off-by:` проверяются машиной; сам trailer автоматически проставляет хук (`git commit -s` вручную не нужен). Обойти можно `--no-verify` (не рекомендуется, см. [`docs/conventions.md`](docs/conventions.md)).
