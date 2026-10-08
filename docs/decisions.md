@@ -34,7 +34,7 @@
 - **OpenAPI-версия спецификации:** `openAPI.yaml` объявляет `openapi: 3.0.3`.
 - **Порт контейнера:** 8080 (nginx, HEALTHCHECK wget на `/`).
 - **CORS:** `Access-Control-Allow-Origin "*"` — разрешить фронтенду/мобильному кодогенератору (Orval) забирать спецификацию; методы ограничены `GET, OPTIONS`.
-- **CSP `connect-src`:** whitelist `'self' http://localhost:3000 https://api.slovo-propovedi.ru`.
+- **CSP `connect-src`:** whitelist `'self' http://localhost:3000 <BACKEND_API_HOSTNAME>` (подставляется из обязательного build-arg `BACKEND_API_HOSTNAME` через плейсхолдер `__BACKEND_API_HOSTNAME__` в `nginx.conf` и `openAPI.yaml`).
 - **Скрытые файлы:** `deny all` в nginx.
 - **Коммиты:** conventional commits + DCO signoff; заголовок ≤ 100 символов. Проверяется commitlint через `.husky/commit-msg`; trailer `Signed-off-by:` проставляет хук автоматически (`git commit -s` вручную не нужен).
 - **Пакетный менеджер:** npm (не yarn).

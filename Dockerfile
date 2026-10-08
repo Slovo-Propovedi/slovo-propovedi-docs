@@ -21,11 +21,12 @@ FROM nginx:alpine
 LABEL org.opencontainers.image.title="slovo-propovedi-docs" \
   org.opencontainers.image.description="Standalone Swagger UI + OpenAPI spec for the Slovo Propovedi API"
 
-# Backend API hostname baked at build time; overridable via --build-arg.
-# Feeds the nginx CSP connect-src allow-list only (openAPI.yaml's servers
-# URL is intentionally left as a literal — see docker-compose.dev.yml,
-# which mounts that file raw for local editing with no build step).
-ARG BACKEND_API_HOSTNAME=api.slovo-propovedi.ru
+# Backend API hostname baked at build time. REQUIRED — no default: the build
+# fails without --build-arg so a prod host can never be silently hardcoded.
+# Substituted into the `__BACKEND_API_HOSTNAME__` placeholders in nginx.conf
+# (CSP connect-src allow-list) and openAPI.yaml (servers URL). Locally,
+# docker-compose.dev.yml mounts openAPI.yaml raw — edit hosts there instead.
+ARG BACKEND_API_HOSTNAME
 
 COPY --from=swagger-ui-build /out/ /usr/share/nginx/html/
 COPY index.html /usr/share/nginx/html/index.html
@@ -40,7 +41,10 @@ RUN set -e; \
       exit 1; \
     fi
 
-RUN sed -i "s|__BACKEND_API_HOSTNAME__|${BACKEND_API_HOSTNAME}|g" /etc/nginx/conf.d/default.conf && nginx -t
+RUN sed -i "s|__BACKEND_API_HOSTNAME__|${BACKEND_API_HOSTNAME}|g" \
+      /etc/nginx/conf.d/default.conf \
+      /usr/share/nginx/html/openAPI.yaml \
+    && nginx -t
 
 EXPOSE 8080
 

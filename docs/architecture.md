@@ -54,7 +54,7 @@ VPS общий/ограниченный по ресурсам. Скрипт со
 
 `nginx.conf` настраивает и безопасность, и доступность спецификации:
 
-- **CSP** (`Content-Security-Policy`) ограничивает источники: `connect-src 'self' http://localhost:3000 https://api.slovo-propovedi.ru` — Swagger UI может ходить только к самому себе и известным хостам API.
+- **CSP** (`Content-Security-Policy`) ограничивает источники: `connect-src 'self' http://localhost:3000 <BACKEND_API_HOSTNAME>` (плейсхолдер `__BACKEND_API_HOSTNAME__` в `nginx.conf` подставляется из build-arg при сборке) — Swagger UI может ходить только к самому себе и известным хостам API.
 - **CORS `Access-Control-Allow-Origin "*"`** — чтобы фронтенд/мобильный кодогенератор (Orval в мобильном проекте) мог с `fetch` забирать спецификацию. Методы ограничены `GET, OPTIONS`; preflight короткозамыкается `return 204`.
 - **Прочие security headers:** `X-Frame-Options`, `X-Content-Type-Options`, `Referrer-Policy`, `Permissions-Policy`.
 - **Скрытые файлы** (`.env`, `.git` и т.п.) — `deny all`.

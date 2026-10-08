@@ -28,8 +28,10 @@ The build downloads `swagger-ui-dist` (default `5.32.12`, overridable via the
 `SWAGGER_UI_VERSION` build arg) and bundles it with the custom `index.html`, `openAPI.yaml`,
 and `nginx.conf` into a minimal `nginx:alpine` image. There is no Node.js runtime in the final image.
 
-The backend API hostname baked into the nginx CSP (default `api.slovo-propovedi.ru`) is
-overridable the same way, via the `BACKEND_API_HOSTNAME` build arg.
+The backend API hostname is REQUIRED (no default): it is substituted into the
+`__BACKEND_API_HOSTNAME__` placeholders in the nginx CSP and the `openAPI.yaml`
+`servers` URL, via the `BACKEND_API_HOSTNAME` build arg — the build fails
+without it.
 
 ```bash
 # With a specific Swagger UI version and/or backend hostname

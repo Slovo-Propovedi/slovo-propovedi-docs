@@ -70,6 +70,14 @@ jobs:
           DOCS_HOSTNAME: ${{ vars.DOCS_HOSTNAME }}
           BACKEND_API_HOSTNAME: ${{ vars.BACKEND_API_HOSTNAME }}
         run: |
+          set -e
+          # Fail fast before any SSH/build work if org vars are not configured.
+          for var in VPS_HOST DOCS_HOSTNAME BACKEND_API_HOSTNAME; do
+            if [ -z "${!var}" ]; then
+              echo "::error::$var is empty — configure the org/repo variable '$var' in Forgejo."
+              exit 1
+            fi
+          done
           SSH_TARGET="$VPS_SSH_USER@$VPS_HOST"
           # Transfer source code (runner already has the tagged checkout)
           tar czf - --exclude='.git' . \
