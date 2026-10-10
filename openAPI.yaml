@@ -25,6 +25,8 @@ tags:
     description: Управление пользователями (админами)
   - name: Invidious
     description: Управление Invidious-инстансами для импорта проповедей
+  - name: Feature flags
+    description: Удалённые фича-флаги с пер-пользовательскими исключениями
   - name: Basic
     description: Базовые роуты
 paths:
@@ -966,6 +968,163 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/InvidiousInstance"
+  /feature-flags/me:
+    get:
+      tags:
+        - Feature flags
+      operationId: FeatureFlagsController_getEffectiveForMe
+      summary: Эффективные фича-флаги текущего пользователя
+      description: "Возвращает эффективное значение каждого флага для текущего пользователя: глобальный дефолт с учётом пер-пользовательского исключения (grant/deny). Доступно любому аутентифицированному пользователю; admin и moderator всегда видят все флаги включёнными."
+      parameters: []
+      security:
+        - bearer: []
+      responses:
+        "200":
+          description: Эффективные значения флагов
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EffectiveFeatureFlagListResponse"
+  /feature-flags:
+    get:
+      tags:
+        - Feature flags
+      operationId: FeatureFlagsController_findAll
+      summary: Список фича-флагов
+      description: "Возвращает все фича-флаги с их глобальными дефолтами. Доступно только администраторам."
+      parameters: []
+      security:
+        - bearer: []
+      responses:
+        "200":
+          description: Список фича-флагов
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FeatureFlagListResponse"
+    post:
+      tags:
+        - Feature flags
+      operationId: FeatureFlagsController_create
+      summary: Создать фича-флаг
+      description: "Создаёт флаг в выключенном состоянии (enabled=false). Ключ — lowercase kebab-case (^[a-z][a-z0-9-]*$), уникален. Доступно только администраторам."
+      security:
+        - bearer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateFeatureFlagRequest"
+      responses:
+        "201":
+          description: Флаг создан
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FeatureFlag"
+  /feature-flags/{id}:
+    patch:
+      tags:
+        - Feature flags
+      operationId: FeatureFlagsController_update
+      summary: Обновить фича-флаг
+      description: "Частичное обновление флага (ключ, название, глобальный дефолт). Дубликат ключа → 409. Доступно только администраторам."
+      security:
+        - bearer: []
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateFeatureFlagRequest"
+      responses:
+        "200":
+          description: Флаг обновлён
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FeatureFlag"
+    delete:
+      tags:
+        - Feature flags
+      operationId: FeatureFlagsController_remove
+      summary: Удалить фича-флаг
+      description: "Удаляет флаг вместе со всеми его пер-пользовательскими исключениями. Доступно только администраторам."
+      security:
+        - bearer: []
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "204":
+          description: Флаг удалён
+  /feature-flags/{id}/overrides/{userId}:
+    put:
+      tags:
+        - Feature flags
+      operationId: FeatureFlagsController_setOverride
+      summary: Задать пер-пользовательское исключение
+      description: "Upsert исключения grant/deny для пары (флаг, пользователь): повторный вызов обновляет значение. Отсутствующий флаг или пользователь → 404. Доступно только администраторам."
+      security:
+        - bearer: []
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+            format: uuid
+        - name: userId
+          required: true
+          in: path
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SetFeatureFlagOverrideRequest"
+      responses:
+        "204":
+          description: Исключение сохранено
+    delete:
+      tags:
+        - Feature flags
+      operationId: FeatureFlagsController_deleteOverride
+      summary: Удалить пер-пользовательское исключение
+      description: "Удаляет исключение для пары (флаг, пользователь); идемпотентно. Отсутствующий флаг или пользователь → 404. Доступно только администраторам."
+      security:
+        - bearer: []
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+            format: uuid
+        - name: userId
+          required: true
+          in: path
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "204":
+          description: Исключение удалено
 components:
   securitySchemes:
     bearer:
@@ -1881,3 +2040,100 @@ components:
           description: Полные https-адреса инстансов; порядок соответствует порядку в UI, дубликаты запрещены
       required:
         - urls
+    FeatureFlag:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+        key:
+          type: string
+          description: Стабильный ключ флага (lowercase kebab-case)
+        title:
+          type: string
+          description: Человекочитаемое название флага
+        enabled:
+          type: boolean
+          description: Глобальный дефолт флага (до пер-пользовательских исключений)
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - key
+        - title
+        - enabled
+        - createdAt
+        - updatedAt
+    FeatureFlagListResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        flags:
+          type: array
+          items:
+            $ref: "#/components/schemas/FeatureFlag"
+      required:
+        - flags
+    CreateFeatureFlagRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - key
+        - title
+      properties:
+        key:
+          type: string
+          pattern: "^[a-z][a-z0-9-]*$"
+          description: Уникальный ключ флага (lowercase kebab-case)
+        title:
+          type: string
+          minLength: 1
+    UpdateFeatureFlagRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        key:
+          type: string
+          pattern: "^[a-z][a-z0-9-]*$"
+        title:
+          type: string
+          minLength: 1
+        enabled:
+          type: boolean
+    SetFeatureFlagOverrideRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - value
+      properties:
+        value:
+          type: string
+          enum:
+            - grant
+            - deny
+          description: grant — включить флаг пользователю, deny — выключить
+    EffectiveFeatureFlag:
+      type: object
+      additionalProperties: false
+      properties:
+        key:
+          type: string
+        enabled:
+          type: boolean
+      required:
+        - key
+        - enabled
+    EffectiveFeatureFlagListResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        flags:
+          type: array
+          items:
+            $ref: "#/components/schemas/EffectiveFeatureFlag"
+      required:
+        - flags
