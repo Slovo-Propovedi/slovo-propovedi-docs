@@ -1,7 +1,7 @@
 openapi: 3.2.0
 info:
   title: API — Слово.Проповеди
-  version: 0.20.0
+  version: 0.21.0
   description: |
     REST API сервиса «Слово.Проповеди».
     Позволяет управлять проповедями, плейлистами, разделами, загружать файлы и работать с пользователями.
@@ -1070,6 +1070,29 @@ paths:
       responses:
         "204":
           description: Флаг удалён
+  /feature-flags/{id}/overrides:
+    get:
+      tags:
+        - Feature flags
+      operationId: FeatureFlagsController_findOverrides
+      summary: Список пер-пользовательских исключений флага
+      description: "Возвращает все исключения grant/deny для указанного флага. Пустой список — валидный ответ 200. Отсутствующий флаг → 404. Доступно только администраторам."
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+            format: uuid
+      security:
+        - bearer: []
+      responses:
+        "200":
+          description: Список исключений флага
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FeatureFlagOverrideListResponse"
   /feature-flags/{id}/overrides/{userId}:
     put:
       tags:
@@ -2078,6 +2101,40 @@ components:
             $ref: "#/components/schemas/FeatureFlag"
       required:
         - flags
+    FeatureFlagOverride:
+      type: object
+      additionalProperties: false
+      properties:
+        flagId:
+          type: string
+          format: uuid
+        userId:
+          type: string
+          format: uuid
+        value:
+          type: string
+          enum:
+            - grant
+            - deny
+          description: grant — включить флаг пользователю, deny — выключить
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - flagId
+        - userId
+        - value
+        - createdAt
+    FeatureFlagOverrideListResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        overrides:
+          type: array
+          items:
+            $ref: "#/components/schemas/FeatureFlagOverride"
+      required:
+        - overrides
     CreateFeatureFlagRequest:
       type: object
       additionalProperties: false
