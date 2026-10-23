@@ -1,6 +1,6 @@
 {
   "name": "slovo-propovedi-docs",
-  "version": "0.22.2",
+  "version": "0.23.0",
   "private": true,
   "scripts": {
     "prepare": "husky",
