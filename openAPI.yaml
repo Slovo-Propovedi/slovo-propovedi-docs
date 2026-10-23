@@ -358,6 +358,7 @@ paths:
           schema:
             type: string
             minLength: 1
+            maxLength: 200
         - name: page
           required: false
           in: query
@@ -365,6 +366,7 @@ paths:
           schema:
             type: integer
             minimum: 1
+            maximum: 100000
         - name: limit
           required: false
           in: query
@@ -546,6 +548,7 @@ paths:
           schema:
             type: string
             minLength: 1
+            maxLength: 200
         - name: page
           required: false
           in: query
@@ -553,6 +556,7 @@ paths:
           schema:
             type: integer
             minimum: 1
+            maximum: 100000
         - name: limit
           required: false
           in: query
@@ -766,6 +770,7 @@ paths:
           schema:
             type: integer
             minimum: 1
+            maximum: 100000
         - name: limit
           required: false
           in: query
@@ -1223,8 +1228,10 @@ components:
       properties:
         title:
           type: string
+          maxLength: 300
         description:
           type: [string, 'null']
+          maxLength: 10000
         itemsSize:
           type: string
           enum:
@@ -1233,7 +1240,9 @@ components:
             - large
             - xLarge
         itemsRows:
-          type: [number, 'null']
+          type: [integer, 'null']
+          minimum: 0
+          maximum: 100
         transform:
           type: string
           enum:
@@ -1548,10 +1557,13 @@ components:
       properties:
         title:
           type: string
+          maxLength: 300
         description:
           type: [string, 'null']
+          maxLength: 10000
         playlistsIds:
           type: array
+          maxItems: 1000
           items:
             type: string
         itemsSize:
@@ -1562,7 +1574,9 @@ components:
             - large
             - xLarge
         itemsRows:
-          type: [number, 'null']
+          type: [integer, 'null']
+          minimum: 0
+          maximum: 100
         transform:
           type: string
           enum:
@@ -1603,16 +1617,21 @@ components:
       properties:
         title:
           type: string
+          maxLength: 300
         description:
           type: [string, 'null']
+          maxLength: 10000
         artwork:
           type: string
+          maxLength: 2048
         sermonsIds:
           type: array
+          maxItems: 1000
           items:
             type: string
         sectionsIds:
           type: array
+          maxItems: 1000
           items:
             type: string
       required:
@@ -1637,16 +1656,21 @@ components:
       properties:
         title:
           type: string
+          maxLength: 300
         description:
           type: [string, 'null']
+          maxLength: 10000
         artwork:
           type: string
+          maxLength: 2048
         sermonsIds:
           type: array
+          maxItems: 1000
           items:
             type: string
         sectionsIds:
           type: array
+          maxItems: 1000
           items:
             type: string
       required:
@@ -1667,6 +1691,7 @@ components:
       properties:
         ids:
           type: array
+          maxItems: 1000
           items:
             type: string
             format: uuid
@@ -1677,6 +1702,7 @@ components:
       properties:
         sermonIds:
           type: array
+          maxItems: 1000
           items:
             type: string
             format: uuid
@@ -1687,6 +1713,7 @@ components:
       properties:
         playlistIds:
           type: array
+          maxItems: 1000
           items:
             type: string
             format: uuid
@@ -1697,20 +1724,33 @@ components:
       properties:
         title:
           type: string
+          maxLength: 300
         description:
           type: [string, 'null']
+          maxLength: 10000
         textFileUrl:
           type: [string, 'null']
+          format: uri
+          maxLength: 2048
+          pattern: "^https?://[^/]+/files/.+$"
         audioUrl:
           type: [string, 'null']
+          format: uri
+          maxLength: 2048
+          pattern: "^https?://[^/]+/files/.+$"
         youtubeUrl:
           type: [string, 'null']
+          format: uri
+          maxLength: 2048
         artist:
           type: string
+          maxLength: 200
         artwork:
           type: string
+          maxLength: 2048
         book:
           type: [string, 'null']
+          maxLength: 100
           example: Genesis
         chapter:
           oneOf:
@@ -1743,6 +1783,7 @@ components:
             - type: 'null'
         playlistsIds:
           type: array
+          maxItems: 1000
           items:
             type: string
       required:
@@ -1791,20 +1832,33 @@ components:
       properties:
         title:
           type: string
+          maxLength: 300
         description:
           type: [string, 'null']
+          maxLength: 10000
         textFileUrl:
           type: [string, 'null']
+          format: uri
+          maxLength: 2048
+          pattern: "^https?://[^/]+/files/.+$"
         audioUrl:
           type: [string, 'null']
+          format: uri
+          maxLength: 2048
+          pattern: "^https?://[^/]+/files/.+$"
         youtubeUrl:
           type: [string, 'null']
+          format: uri
+          maxLength: 2048
         artist:
           type: string
+          maxLength: 200
         artwork:
           type: string
+          maxLength: 2048
         book:
           type: [string, 'null']
+          maxLength: 100
           example: Genesis
         chapter:
           oneOf:
@@ -1837,6 +1891,7 @@ components:
             - type: 'null'
         playlistsIds:
           type: array
+          maxItems: 1000
           items:
             type: string
       required:
@@ -1865,8 +1920,10 @@ components:
           type: string
           description: Имя пользователя для входа
           example: admin
+          maxLength: 100
         password:
           type: string
+          maxLength: 200
       required:
         - username
         - password
@@ -1922,12 +1979,17 @@ components:
       properties:
         name:
           type: string
+          maxLength: 100
         email:
           type: string
+          maxLength: 254
         username:
           type: string
+          maxLength: 50
         password:
           type: string
+          minLength: 8
+          maxLength: 200
         role:
           $ref: "#/components/schemas/UserRole"
     UpdateUserRequest:
@@ -1936,10 +1998,13 @@ components:
       properties:
         name:
           type: string
+          maxLength: 100
         email:
           type: string
+          maxLength: 254
         username:
           type: string
+          maxLength: 50
         role:
           $ref: "#/components/schemas/UserRole"
     ChangePasswordRequest:
@@ -1950,6 +2015,8 @@ components:
       properties:
         password:
           type: string
+          minLength: 8
+          maxLength: 200
     AuthResponse:
       type: object
       additionalProperties: false
@@ -2010,8 +2077,10 @@ components:
       properties:
         urls:
           type: array
+          maxItems: 100
           items:
             type: string
+            maxLength: 2048
           description: Полные https-адреса инстансов; порядок соответствует порядку в UI, дубликаты запрещены
       required:
         - urls
@@ -2097,10 +2166,12 @@ components:
         key:
           type: string
           pattern: "^[a-z][a-z0-9-]*$"
+          maxLength: 100
           description: Уникальный ключ флага (lowercase kebab-case)
         title:
           type: string
           minLength: 1
+          maxLength: 200
     UpdateFeatureFlagRequest:
       type: object
       additionalProperties: false
@@ -2108,9 +2179,11 @@ components:
         key:
           type: string
           pattern: "^[a-z][a-z0-9-]*$"
+          maxLength: 100
         title:
           type: string
           minLength: 1
+          maxLength: 200
         enabled:
           type: boolean
     SetFeatureFlagOverrideRequest:
