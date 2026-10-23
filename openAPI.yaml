@@ -378,7 +378,7 @@ paths:
         - name: sort
           required: false
           in: query
-          description: Вариант сортировки. `date` — по убыванию id (порядок загрузки), `title` — по названию, `section` — по названию раздела (плейлисты без раздела — в конце). Игнорируется при поиске (сортировка по релевантности). Применяется только к страничной выдаче (page/limit) и полной выдаче; несовместимо с take/cursor.
+          description: Вариант сортировки. `date` — по дате добавления (created_at), при равенстве — по id, `title` — по названию, `section` — по названию раздела (плейлисты без раздела — в конце). Игнорируется при поиске (сортировка по релевантности). Применяется только к страничной выдаче (page/limit) и полной выдаче.
           schema:
             type: string
             enum:
@@ -398,7 +398,7 @@ paths:
             default: desc
       responses:
         "200":
-          description: Список плейлистов; count — общее число; сортировка — по параметрам sort/order (sort=date — по убыванию id), при поиске (search) — по релевантности
+          description: Список плейлистов; count — общее число; сортировка — по параметрам sort/order (sort=date — по дате добавления (created_at), при равенстве — по id), при поиске (search) — по релевантности
           content:
             application/json:
               schema:
@@ -538,9 +538,9 @@ paths:
         - name: cursor
           required: false
           in: query
+          description: "Непрозрачный курсор keyset-пагинации: используйте значение nextCursor из предыдущей страницы (составной курсор: дата добавления + id). Курсоры старого формата (uuid) считаются недействительными и возвращают 400."
           schema:
             type: string
-            format: uuid
         - name: search
           required: false
           in: query
@@ -568,7 +568,7 @@ paths:
         - name: sort
           required: false
           in: query
-          description: Вариант сортировки. `date` — по убыванию id (порядок загрузки), `title` — по названию, `artist` — по автору, `playlist` — по названию плейлиста (проповеди без плейлиста — в конце). Игнорируется при поиске (сортировка по релевантности). Применяется только к страничной выдаче (page/limit) и полной выдаче; несовместимо с take/cursor.
+          description: Вариант сортировки. `date` — по дате добавления (created_at), при равенстве — по id, `title` — по названию, `artist` — по автору, `playlist` — по названию плейлиста (проповеди без плейлиста — в конце). Игнорируется при поиске (сортировка по релевантности). Применяется только к страничной выдаче (page/limit) и полной выдаче; несовместимо с take/cursor.
           schema:
             type: string
             enum:
@@ -589,7 +589,7 @@ paths:
             default: desc
       responses:
         "200":
-          description: Список проповедей с количеством; сортировка — по параметрам sort/order (sort=date — по убыванию id), при поиске (search) — по релевантности; в оффсетном режиме count — общее число записей, nextCursor — null
+          description: Список проповедей с количеством; сортировка — по параметрам sort/order (sort=date — по дате добавления (created_at), при равенстве — по id), при поиске (search) — по релевантности; в оффсетном режиме count — общее число записей, nextCursor — null
           content:
             application/json:
               schema:
@@ -1418,6 +1418,10 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/PlaylistEntity"
+        createdAt:
+          type: string
+          format: date-time
+          description: Дата добавления проповеди
       required:
         - id
         - title
@@ -1431,6 +1435,7 @@ components:
         - chapter
         - verse
         - playlists
+        - createdAt
     PlaylistSermon:
       type: object
       additionalProperties: false
@@ -1532,6 +1537,10 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/PlaylistSermon"
+        createdAt:
+          type: string
+          format: date-time
+          description: Дата добавления плейлиста
       required:
         - id
         - title
@@ -1539,6 +1548,7 @@ components:
         - artwork
         - sections
         - sermons
+        - createdAt
     AllSectionsResponse:
       type: object
       additionalProperties: false
