@@ -147,6 +147,7 @@ Settings → Actions → Secrets.
 | Secret | Description |
 | --- | --- |
 | `VPS_SSH_PRIVATE_KEY` | SSH private key (ed25519) for root access to the VPS |
+| `VPS_SSH_KNOWN_HOSTS` | Pinned VPS host key: `ssh-keyscan <VPS_HOST>` output, verified against the server's fingerprints (see `docs/ci-cd.md`) |
 | `VPS_HOST` | VPS hostname or IP |
 | `VPS_SSH_USER` | SSH user on the VPS (`root`) |
 

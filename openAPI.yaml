@@ -1,7 +1,7 @@
 openapi: 3.2.0
 info:
   title: API — Слово.Проповеди
-  version: 0.21.2
+  version: 0.23.1
   description: |
     REST API сервиса «Слово.Проповеди».
     Позволяет управлять проповедями, плейлистами, разделами, загружать файлы и работать с пользователями.
@@ -128,25 +128,6 @@ paths:
         - Files
       security:
         - bearer: []
-  /files/{fileName}/stream-url:
-    get:
-      operationId: AppController_getStreamUrl
-      summary: Получить URL потока для файла
-      parameters:
-        - name: fileName
-          required: true
-          in: path
-          schema:
-            type: string
-      responses:
-        "200":
-          description: "Предварительно подписанный URL потока"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/StreamUrlResponse"
-      tags:
-        - Files
   /files/{fileName}:
     get:
       operationId: AppController_getFile
@@ -377,6 +358,7 @@ paths:
           schema:
             type: string
             minLength: 1
+            maxLength: 200
         - name: page
           required: false
           in: query
@@ -384,6 +366,7 @@ paths:
           schema:
             type: integer
             minimum: 1
+            maximum: 100000
         - name: limit
           required: false
           in: query
@@ -395,7 +378,7 @@ paths:
         - name: sort
           required: false
           in: query
-          description: Вариант сортировки. `date` — по убыванию id (порядок загрузки), `title` — по названию, `section` — по названию раздела (плейлисты без раздела — в конце). Игнорируется при поиске (сортировка по релевантности). Применяется только к страничной выдаче (page/limit) и полной выдаче; несовместимо с take/cursor.
+          description: Вариант сортировки. `date` — по дате добавления (created_at), при равенстве — по id, `title` — по названию, `section` — по названию раздела (плейлисты без раздела — в конце). Игнорируется при поиске (сортировка по релевантности). Применяется только к страничной выдаче (page/limit) и полной выдаче.
           schema:
             type: string
             enum:
@@ -415,7 +398,7 @@ paths:
             default: desc
       responses:
         "200":
-          description: Список плейлистов; count — общее число; сортировка — по параметрам sort/order (sort=date — по убыванию id), при поиске (search) — по релевантности
+          description: Список плейлистов; count — общее число; сортировка — по параметрам sort/order (sort=date — по дате добавления (created_at), при равенстве — по id), при поиске (search) — по релевантности
           content:
             application/json:
               schema:
@@ -555,9 +538,9 @@ paths:
         - name: cursor
           required: false
           in: query
+          description: "Непрозрачный курсор keyset-пагинации: используйте значение nextCursor из предыдущей страницы (составной курсор: дата добавления + id). Курсоры старого формата (uuid) считаются недействительными и возвращают 400."
           schema:
             type: string
-            format: uuid
         - name: search
           required: false
           in: query
@@ -565,6 +548,7 @@ paths:
           schema:
             type: string
             minLength: 1
+            maxLength: 200
         - name: page
           required: false
           in: query
@@ -572,6 +556,7 @@ paths:
           schema:
             type: integer
             minimum: 1
+            maximum: 100000
         - name: limit
           required: false
           in: query
@@ -583,7 +568,7 @@ paths:
         - name: sort
           required: false
           in: query
-          description: Вариант сортировки. `date` — по убыванию id (порядок загрузки), `title` — по названию, `artist` — по автору, `playlist` — по названию плейлиста (проповеди без плейлиста — в конце). Игнорируется при поиске (сортировка по релевантности). Применяется только к страничной выдаче (page/limit) и полной выдаче; несовместимо с take/cursor.
+          description: Вариант сортировки. `date` — по дате добавления (created_at), при равенстве — по id, `title` — по названию, `artist` — по автору, `playlist` — по названию плейлиста (проповеди без плейлиста — в конце). Игнорируется при поиске (сортировка по релевантности). Применяется только к страничной выдаче (page/limit) и полной выдаче; несовместимо с take/cursor.
           schema:
             type: string
             enum:
@@ -604,7 +589,7 @@ paths:
             default: desc
       responses:
         "200":
-          description: Список проповедей с количеством; сортировка — по параметрам sort/order (sort=date — по убыванию id), при поиске (search) — по релевантности; в оффсетном режиме count — общее число записей, nextCursor — null
+          description: Список проповедей с количеством; сортировка — по параметрам sort/order (sort=date — по дате добавления (created_at), при равенстве — по id), при поиске (search) — по релевантности; в оффсетном режиме count — общее число записей, nextCursor — null
           content:
             application/json:
               schema:
@@ -623,26 +608,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/SermonDistinctValuesResponse"
-      tags:
-        - Sermons
-  /sermons/{id}/stream-url:
-    get:
-      operationId: SermonController_getStreamUrl
-      summary: Получить URL потока для аудио проповеди
-      parameters:
-        - name: id
-          required: true
-          in: path
-          schema:
-            type: string
-            format: uuid
-      responses:
-        "200":
-          description: "Предварительно подписанный URL потока"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/StreamUrlResponse"
       tags:
         - Sermons
   /sermons/{id}:
@@ -805,6 +770,7 @@ paths:
           schema:
             type: integer
             minimum: 1
+            maximum: 100000
         - name: limit
           required: false
           in: query
@@ -974,7 +940,7 @@ paths:
         - Feature flags
       operationId: FeatureFlagsController_getEffectiveForMe
       summary: Эффективные фича-флаги текущего пользователя
-      description: "Возвращает эффективное значение каждого флага. При вызове с валидным Bearer-токеном — эффективные флаги пользователя по единому правилу: (флаг включён глобально И отсутствует deny-исключение) ИЛИ существует grant-исключение. Правило одинаково для всех ролей, включая admin и moderator (админ-байпаса нет). При вызове без токена, с невалидным/просроченным токеном или для анонимного пользователя — глобальное состояние флагов (исключения не применяются). Аутентификация опциональна; эндпоинт никогда не возвращает 401."
+      description: "Возвращает эффективное значение каждого флага. При вызове с валидным Bearer-токеном — эффективные флаги пользователя по единому правилу: (флаг включён глобально И отсутствует deny-исключение) ИЛИ существует grant-исключение. Правило одинаково для всех ролей, включая admin и moderator (админ-байпаса нет). При вызове без токена (аноним) — глобальное состояние флагов (исключения не применяются). Аутентификация опциональна; невалидный или просроченный токен → 401, клиент обновит токен и повторит запрос."
       parameters: []
       responses:
         "200":
@@ -1162,13 +1128,6 @@ components:
           type: string
       required:
         - status
-    StreamUrlResponse:
-      type: object
-      properties:
-        url:
-          type: string
-      required:
-        - url
     IFileResponseDto:
       type: object
       additionalProperties: false
@@ -1269,8 +1228,10 @@ components:
       properties:
         title:
           type: string
+          maxLength: 300
         description:
           type: [string, 'null']
+          maxLength: 10000
         itemsSize:
           type: string
           enum:
@@ -1279,7 +1240,9 @@ components:
             - large
             - xLarge
         itemsRows:
-          type: [number, 'null']
+          type: [integer, 'null']
+          minimum: 0
+          maximum: 100
         transform:
           type: string
           enum:
@@ -1289,7 +1252,7 @@ components:
         isDescriptionTitleOnSlideLarge:
           type: boolean
         whereIsSlideTitleLocated:
-          description: 'Расположение заголовка на карточке. Значение `bothOnAndUnder` устарело и не используется: новые секции должны использовать `on` или `under`; существующие значения `bothOnAndUnder` клиент читает как `under`.'
+          description: 'Расположение заголовка на карточке. `bothOnAndUnder` — заголовок и описание внизу карточки: заголовок над описанием. `on` — заголовок по центру карточки, `under` — заголовок под карточкой.'
           type: string
           enum:
             - "on"
@@ -1335,7 +1298,7 @@ components:
           type: boolean
           default: false
         whereIsSlideTitleLocated:
-          description: 'Расположение заголовка на карточке. Значение `bothOnAndUnder` устарело и не используется: новые секции должны использовать `on` или `under`; существующие значения `bothOnAndUnder` клиент читает как `under`.'
+          description: 'Расположение заголовка на карточке. `bothOnAndUnder` — заголовок и описание внизу карточки: заголовок над описанием. `on` — заголовок по центру карточки, `under` — заголовок под карточкой.'
           type: string
           enum:
             - "on"
@@ -1455,6 +1418,10 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/PlaylistEntity"
+        createdAt:
+          type: string
+          format: date-time
+          description: Дата добавления проповеди
       required:
         - id
         - title
@@ -1468,6 +1435,7 @@ components:
         - chapter
         - verse
         - playlists
+        - createdAt
     PlaylistSermon:
       type: object
       additionalProperties: false
@@ -1569,6 +1537,10 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/PlaylistSermon"
+        createdAt:
+          type: string
+          format: date-time
+          description: Дата добавления плейлиста
       required:
         - id
         - title
@@ -1576,6 +1548,7 @@ components:
         - artwork
         - sections
         - sermons
+        - createdAt
     AllSectionsResponse:
       type: object
       additionalProperties: false
@@ -1594,10 +1567,13 @@ components:
       properties:
         title:
           type: string
+          maxLength: 300
         description:
           type: [string, 'null']
+          maxLength: 10000
         playlistsIds:
           type: array
+          maxItems: 1000
           items:
             type: string
         itemsSize:
@@ -1608,7 +1584,9 @@ components:
             - large
             - xLarge
         itemsRows:
-          type: [number, 'null']
+          type: [integer, 'null']
+          minimum: 0
+          maximum: 100
         transform:
           type: string
           enum:
@@ -1618,7 +1596,7 @@ components:
         isDescriptionTitleOnSlideLarge:
           type: boolean
         whereIsSlideTitleLocated:
-          description: 'Расположение заголовка на карточке. Значение `bothOnAndUnder` устарело и не используется: новые секции должны использовать `on` или `under`; существующие значения `bothOnAndUnder` клиент читает как `under`.'
+          description: 'Расположение заголовка на карточке. `bothOnAndUnder` — заголовок и описание внизу карточки: заголовок над описанием. `on` — заголовок по центру карточки, `under` — заголовок под карточкой.'
           type: string
           enum:
             - "on"
@@ -1649,16 +1627,23 @@ components:
       properties:
         title:
           type: string
+          maxLength: 300
         description:
           type: [string, 'null']
+          maxLength: 10000
         artwork:
           type: string
+          maxLength: 2048
+          pattern: "^(https?://.*)?$"
+          description: Пустая строка или http(s)-ссылка на обложку — прочие схемы (`javascript:`, `data:`) отклоняются.
         sermonsIds:
           type: array
+          maxItems: 1000
           items:
             type: string
         sectionsIds:
           type: array
+          maxItems: 1000
           items:
             type: string
       required:
@@ -1683,16 +1668,23 @@ components:
       properties:
         title:
           type: string
+          maxLength: 300
         description:
           type: [string, 'null']
+          maxLength: 10000
         artwork:
           type: string
+          maxLength: 2048
+          pattern: "^(https?://.*)?$"
+          description: Пустая строка или http(s)-ссылка на обложку — прочие схемы (`javascript:`, `data:`) отклоняются.
         sermonsIds:
           type: array
+          maxItems: 1000
           items:
             type: string
         sectionsIds:
           type: array
+          maxItems: 1000
           items:
             type: string
       required:
@@ -1713,6 +1705,7 @@ components:
       properties:
         ids:
           type: array
+          maxItems: 1000
           items:
             type: string
             format: uuid
@@ -1723,6 +1716,7 @@ components:
       properties:
         sermonIds:
           type: array
+          maxItems: 1000
           items:
             type: string
             format: uuid
@@ -1733,6 +1727,7 @@ components:
       properties:
         playlistIds:
           type: array
+          maxItems: 1000
           items:
             type: string
             format: uuid
@@ -1743,20 +1738,37 @@ components:
       properties:
         title:
           type: string
+          maxLength: 300
         description:
           type: [string, 'null']
+          maxLength: 10000
         textFileUrl:
           type: [string, 'null']
+          format: uri
+          maxLength: 2048
+          pattern: "^https?://[^/]+/files/.+$"
         audioUrl:
           type: [string, 'null']
+          format: uri
+          maxLength: 2048
+          pattern: "^https?://[^/]+/files/.+$"
         youtubeUrl:
           type: [string, 'null']
+          format: uri
+          maxLength: 2048
+          pattern: "^https?://.+$"
+          description: Только http(s)-ссылки — схемы `javascript:`/`data:` отклоняются (защита от XSS).
         artist:
           type: string
+          maxLength: 200
         artwork:
           type: string
+          maxLength: 2048
+          pattern: "^(https?://.*)?$"
+          description: Пустая строка или http(s)-ссылка на обложку — прочие схемы (`javascript:`, `data:`) отклоняются.
         book:
           type: [string, 'null']
+          maxLength: 100
           example: Genesis
         chapter:
           oneOf:
@@ -1789,6 +1801,7 @@ components:
             - type: 'null'
         playlistsIds:
           type: array
+          maxItems: 1000
           items:
             type: string
       required:
@@ -1837,20 +1850,37 @@ components:
       properties:
         title:
           type: string
+          maxLength: 300
         description:
           type: [string, 'null']
+          maxLength: 10000
         textFileUrl:
           type: [string, 'null']
+          format: uri
+          maxLength: 2048
+          pattern: "^https?://[^/]+/files/.+$"
         audioUrl:
           type: [string, 'null']
+          format: uri
+          maxLength: 2048
+          pattern: "^https?://[^/]+/files/.+$"
         youtubeUrl:
           type: [string, 'null']
+          format: uri
+          maxLength: 2048
+          pattern: "^https?://.+$"
+          description: Только http(s)-ссылки — схемы `javascript:`/`data:` отклоняются (защита от XSS).
         artist:
           type: string
+          maxLength: 200
         artwork:
           type: string
+          maxLength: 2048
+          pattern: "^(https?://.*)?$"
+          description: Пустая строка или http(s)-ссылка на обложку — прочие схемы (`javascript:`, `data:`) отклоняются.
         book:
           type: [string, 'null']
+          maxLength: 100
           example: Genesis
         chapter:
           oneOf:
@@ -1883,6 +1913,7 @@ components:
             - type: 'null'
         playlistsIds:
           type: array
+          maxItems: 1000
           items:
             type: string
       required:
@@ -1911,8 +1942,10 @@ components:
           type: string
           description: Имя пользователя для входа
           example: admin
+          maxLength: 100
         password:
           type: string
+          maxLength: 200
       required:
         - username
         - password
@@ -1968,12 +2001,17 @@ components:
       properties:
         name:
           type: string
+          maxLength: 100
         email:
           type: string
+          maxLength: 254
         username:
           type: string
+          maxLength: 50
         password:
           type: string
+          minLength: 8
+          maxLength: 200
         role:
           $ref: "#/components/schemas/UserRole"
     UpdateUserRequest:
@@ -1982,10 +2020,13 @@ components:
       properties:
         name:
           type: string
+          maxLength: 100
         email:
           type: string
+          maxLength: 254
         username:
           type: string
+          maxLength: 50
         role:
           $ref: "#/components/schemas/UserRole"
     ChangePasswordRequest:
@@ -1996,6 +2037,8 @@ components:
       properties:
         password:
           type: string
+          minLength: 8
+          maxLength: 200
     AuthResponse:
       type: object
       additionalProperties: false
@@ -2056,8 +2099,10 @@ components:
       properties:
         urls:
           type: array
+          maxItems: 100
           items:
             type: string
+            maxLength: 2048
           description: Полные https-адреса инстансов; порядок соответствует порядку в UI, дубликаты запрещены
       required:
         - urls
@@ -2143,10 +2188,12 @@ components:
         key:
           type: string
           pattern: "^[a-z][a-z0-9-]*$"
+          maxLength: 100
           description: Уникальный ключ флага (lowercase kebab-case)
         title:
           type: string
           minLength: 1
+          maxLength: 200
     UpdateFeatureFlagRequest:
       type: object
       additionalProperties: false
@@ -2154,9 +2201,11 @@ components:
         key:
           type: string
           pattern: "^[a-z][a-z0-9-]*$"
+          maxLength: 100
         title:
           type: string
           minLength: 1
+          maxLength: 200
         enabled:
           type: boolean
     SetFeatureFlagOverrideRequest:
