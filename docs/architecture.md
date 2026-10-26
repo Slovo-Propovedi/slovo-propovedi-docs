@@ -48,7 +48,7 @@ Stage 2 (nginx:alpine, runtime)  →  COPY --from=swagger-ui-build /out/ → р�
 
 ## Почему buildx с resource limits
 
-VPS общий/ограниченный по ресурсам. Скрипт создаёт buildx-билдер `slovo-constrained` с driver `docker-container`, лимитами памяти (`1g`) и CPU (`cpu-quota 80000`), чтобы сборка Docker-образа **не «съедала»** ресурсы других сервисов VPS. Сборка идёт через `docker buildx build --load` (загрузка образа в локальные docker images).
+VPS общий/ограниченный по ресурсам. Сборка идёт через buildx-билдер с driver `docker-container`, лимитами памяти (`1g`) и CPU (`cpu-quota 80000`) — его создаёт playbook (роль `slovo-buildx`, сейчас `slovo-constrained`), а скрипт деплоя только проверяет, что он есть (имя — переменная организации `BUILDX_BUILDER`), чтобы сборка Docker-образа **не «съедала»** ресурсы других сервисов VPS. Сборка идёт через `docker buildx build --load` (загрузка образа в локальные docker images).
 
 ## Почему nginx security headers & CORS
 

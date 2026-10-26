@@ -113,9 +113,11 @@ GET {server}/api/v1/repos/{repo}/commits/{sha}/status
 
 - **Docker** — `command -v docker` + `systemctl is-active docker`.
 - **`slovo` user/group** — контейнер работает от не-root; скрипт читает `uid/gid` для запуска, но сам пользователя не создаёт (роль `slovo-base`).
-- **buildx builder `slovo-constrained`** — `docker buildx inspect`; билдер с ресурсными лимитами создаёт роль `slovo-buildx`.
-- **Traefik `slovo-traefik.service`** — `systemctl is-active`; если Traefik под другим именем юнита — `TRAEFIK_SERVICE=<name>`.
-- **Docker-сеть `traefik`** — `docker network inspect`.
+- **buildx builder** (`BUILDX_BUILDER`, сейчас `slovo-constrained`) — `docker buildx inspect`; билдер с ресурсными лимитами создаёт роль `slovo-buildx`.
+- **Traefik** (`TRAEFIK_SERVICE`, сейчас `slovo-traefik.service`) — `systemctl is-active`.
+- **Docker-сеть Traefik** (`TRAEFIK_NETWORK`, сейчас `traefik`) — `docker network inspect`.
+
+Имена этих трёх компонентов задаёт playbook, а в деплой они приходят из **переменных организации** `BUILDX_BUILDER`, `TRAEFIK_SERVICE`, `TRAEFIK_NETWORK` (общих для всех репозиториев). Значений по умолчанию в скрипте нет: если в playbook что-то переименуют, достаточно поменять переменную, а забытая переменная остановит деплой с понятной ошибкой ещё до SSH.
 
 Сеть `slovo-docs` — единственная, которую скрипт создаёт сам (шаг 4), т.к. она принадлежит этому сервису.
 
@@ -169,6 +171,8 @@ Settings → Actions.
 | Secret | `VPS_HOST` | Hostname или IP VPS |
 | Secret | `VPS_SSH_USER` | SSH-пользователь на VPS (`root`) |
 | Variable | `DOCS_HOSTNAME` | Публичный hostname сайта (например `docs.example.com`) — не чувствительное, поэтому variable, а не secret |
+| Variable | `BACKEND_API_HOSTNAME` | Hostname API — подставляется в CSP `connect-src` nginx, чтобы «Try it out» в Swagger UI мог обращаться к API |
+| Variable | `TRAEFIK_NETWORK` / `TRAEFIK_SERVICE` / `BUILDX_BUILDER` | Имена инфраструктуры из playbook (`traefik` / `slovo-traefik.service` / `slovo-constrained`) — переменные организации, общие для всех репозиториев |
 
 ## VPS prerequisites
 

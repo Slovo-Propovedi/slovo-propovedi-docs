@@ -83,10 +83,14 @@ jobs:
           DEPLOY_TAG: ${{ github.ref_name }}
           DOCS_HOSTNAME: ${{ vars.DOCS_HOSTNAME }}
           BACKEND_API_HOSTNAME: ${{ vars.BACKEND_API_HOSTNAME }}
+          # Shared infra names (org vars mirroring the playbook).
+          TRAEFIK_NETWORK: ${{ vars.TRAEFIK_NETWORK }}
+          TRAEFIK_SERVICE: ${{ vars.TRAEFIK_SERVICE }}
+          BUILDX_BUILDER: ${{ vars.BUILDX_BUILDER }}
         run: |
           set -e
           # Fail fast before any SSH/build work if org vars are not configured.
-          for var in VPS_HOST DOCS_HOSTNAME BACKEND_API_HOSTNAME; do
+          for var in VPS_HOST DOCS_HOSTNAME BACKEND_API_HOSTNAME TRAEFIK_NETWORK TRAEFIK_SERVICE BUILDX_BUILDER; do
             if [ -z "${!var}" ]; then
               echo "::error::$var is empty — configure the org/repo variable '$var' in Forgejo."
               exit 1
@@ -100,12 +104,11 @@ jobs:
           scp scripts/vps-deploy.sh "$SSH_TARGET:/tmp/vps-deploy.sh"
           # Shared infra (Traefik, Docker, slovo user, buildx) is owned by the
           # slovo-propovedi playbook; the script only verifies it.
-          ssh "$SSH_TARGET" \
-            "chmod +x /tmp/vps-deploy.sh && \
-             DEPLOY_TAG='$DEPLOY_TAG' \
-             DOCS_HOSTNAME='$DOCS_HOSTNAME' \
-             BACKEND_API_HOSTNAME='$BACKEND_API_HOSTNAME' \
-             bash /tmp/vps-deploy.sh"
+          # Every value is shell-quoted for the remote shell (printf %q): a quote
+          # in a tag or variable can never break out of its argument.
+          REMOTE_ENV="$(printf 'DEPLOY_TAG=%q DOCS_HOSTNAME=%q BACKEND_API_HOSTNAME=%q TRAEFIK_NETWORK=%q TRAEFIK_SERVICE=%q BUILDX_BUILDER=%q' \
+            "$DEPLOY_TAG" "$DOCS_HOSTNAME" "$BACKEND_API_HOSTNAME" "$TRAEFIK_NETWORK" "$TRAEFIK_SERVICE" "$BUILDX_BUILDER")"
+          ssh "$SSH_TARGET" "chmod +x /tmp/vps-deploy.sh && $REMOTE_ENV bash /tmp/vps-deploy.sh"
 
       - name: Extract changelog section
         run: |

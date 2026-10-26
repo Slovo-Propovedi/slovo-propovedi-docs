@@ -25,14 +25,18 @@ DOCS_HOSTNAME="${DOCS_HOSTNAME:?ERROR: DOCS_HOSTNAME is required (e.g. docs.exam
 BACKEND_API_HOSTNAME="${BACKEND_API_HOSTNAME:?ERROR: BACKEND_API_HOSTNAME is required (bare hostname, e.g. api.example.com)}"
 BASE_PATH="${BASE_PATH:-/slovo/docs}"
 SRC_PATH="${SRC_PATH:-/slovo/docs/container-src}"
-BUILDER_NAME="${BUILDER_NAME:-slovo-constrained}"
 IMAGE_NAME="${IMAGE_NAME:-slovo-docs:latest}"
 CONTAINER_PORT="${CONTAINER_PORT:-8080}"
 CONTAINER_NETWORK="${CONTAINER_NETWORK:-slovo-docs}"
-TRAEFIK_NETWORK="${TRAEFIK_NETWORK:-traefik}"
 MEMORY_LIMIT="${MEMORY_LIMIT:-64m}"
 STOP_GRACE="${STOP_GRACE:-3}"
-TRAEFIK_SERVICE="${TRAEFIK_SERVICE:-slovo-traefik.service}"
+
+# Shared infrastructure names — owned by the slovo-propovedi playbook, passed
+# by the release workflow from Forgejo org variables. No defaults: a renamed
+# network/service/builder must fail loudly instead of using a stale name.
+TRAEFIK_NETWORK="${TRAEFIK_NETWORK:?ERROR: TRAEFIK_NETWORK is required (Forgejo org variable)}"
+TRAEFIK_SERVICE="${TRAEFIK_SERVICE:?ERROR: TRAEFIK_SERVICE is required (Forgejo org variable)}"
+BUILDER_NAME="${BUILDX_BUILDER:?ERROR: BUILDX_BUILDER is required (Forgejo org variable)}"
 
 # Shared infrastructure this deploy depends on but does NOT own (playbook-managed).
 REQUIRED_SERVICES="$TRAEFIK_SERVICE"
@@ -118,6 +122,7 @@ echo ">> Writing Traefik labels..."
   printf 'traefik.enable=true\n'
   printf 'traefik.docker.network=%s\n' "$TRAEFIK_NETWORK"
   printf 'traefik.http.services.slovo-docs.loadbalancer.server.port=%s\n' "$CONTAINER_PORT"
+  # shellcheck disable=SC2016 # literal backticks are Traefik label syntax
   printf 'traefik.http.routers.slovo-docs.rule=Host(`%s`)\n' "$DOCS_HOSTNAME"
   printf 'traefik.http.routers.slovo-docs.service=slovo-docs\n'
   printf 'traefik.http.routers.slovo-docs.entrypoints=web-secure\n'
