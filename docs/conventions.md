@@ -19,6 +19,10 @@
 - Каждое срезанное решение фиксируется в `docs/debt.md` в том же PR (см. ниже).
 - Машино-проверяемые команды агент запускает из DoD-чеклиста (ниже).
 
+### Обязательные воркфлоу: SDD, plan-implement, TDD
+
+Любая нетривиальная задача прогоняется через воркфлоу ДО реализации: спек-уровень (новая фича, изменение API-контракта, расплывчатые требования) — пайплайн spec-kit (`/speckit.specify` → `clarify` → `plan` → `tasks` → `implement`); понятная многошаговая задача — скилл `plan-implement`; баг — `systematic-debugging`; любое изменение кода — `tdd` (в репо без тест-раннера — verification-first); всегда — `ponytail` (минимальный дифф) и `verification-before-completion` перед «готово». Скиллы лежат в `.opencode/skills/` и `.claude/skills/` (копии байт-в-байт), команды spec-kit — в `.opencode/commands/` (зеркало в `.claude/commands/`). Детали — [`AGENTS.md`](../AGENTS.md) → «Mandatory Workflows». CLI `specify` нужен только для scaffolding/обновления шаблонов — в рантайме агентам и контрибьюторам он не требуется.
+
 ## Ведение документации docs/
 
 - **Язык:** русский. Технические термины и кодовые идентификаторы — английским как есть.
@@ -45,6 +49,7 @@
 - [ ] `docs/` обновлены в том же PR (затронутые `architecture.md`, `ci-cd.md`, `decisions.md`, `conventions.md` при необходимости);
 - [ ] срезанные углы записаны в `docs/debt.md`;
 - [ ] новые зависимости — только через `docs/decisions.md` (Approved stack);
+- [ ] Задача прошла через воркфлоу (speckit / plan-implement / systematic-debugging) с tdd и финальной проверкой verification-before-completion;
 - [ ] коммиты — conventional commits + signoff, заголовок ≤ 100 символов.
 
 ## Версионирование и релизы
