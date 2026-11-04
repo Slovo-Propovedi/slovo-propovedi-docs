@@ -48,4 +48,4 @@
 
 ## Краткий контекст продукта
 
-Сервис отдаёт документацию API через Swagger UI: `/` — интерактивная документация, `/openAPI.yaml` — сырая OpenAPI-спецификация. Деплой полностью автоматизирован через **Forgejo Actions**: push в `main` → CI валидирует `openAPI.yaml`; push тега `v*` → Release-workflow ждёт прохода CI, заливает исходники на VPS по `tar+ssh`, строит образ через `docker buildx` и поднимает `slovo-docs.service` (systemd + Traefik, TLS через Let's Encrypt). Подробности и долги — в [`debt.md`](./debt.md).
+Сервис отдаёт документацию API через Swagger UI: `/` — интерактивная документация, `/openAPI.yaml` — сырая OpenAPI-спецификация. Деплой полностью автоматизирован через **Forgejo Actions**: push в `main` → CI валидирует `openAPI.yaml`; push тега `v*` → Release-workflow ждёт прохода CI, собирает и пушит образ в контейнер-реестр Forgejo (buildx через SSH-билдер), а `vps-deploy.sh` тянет опубликованный тег и поднимает `slovo-docs.service` (systemd + Traefik, TLS через Let's Encrypt). Подробности и долги — в [`debt.md`](./debt.md).

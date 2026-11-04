@@ -48,7 +48,7 @@ Stage 2 (nginx:alpine, runtime)  →  COPY --from=swagger-ui-build /out/ → р�
 
 ## Почему buildx с resource limits
 
-VPS общий/ограниченный по ресурсам. Сборка идёт через buildx-билдер с driver `docker-container`, лимитами памяти (`1g`) и CPU (`cpu-quota 80000`) — его создаёт playbook (роль `slovo-buildx`, сейчас `slovo-constrained`), а скрипт деплоя только проверяет, что он есть (имя — переменная организации `BUILDX_BUILDER`), чтобы сборка Docker-образа **не «съедала»** ресурсы других сервисов VPS. Сборка идёт через `docker buildx build --load` (загрузка образа в локальные docker images).
+VPS общий/ограниченный по ресурсам. Сборка идёт через buildx-билдер с driver `docker-container`, лимитами памяти (`1g`) и CPU (`cpu-quota 80000`) — его создаёт playbook (роль `slovo-buildx`, сейчас `slovo-constrained`), а скрипт деплоя только проверяет, что он есть (имя — переменная организации `BUILDX_BUILDER`), чтобы сборка Docker-образа **не «съедала»** ресурсы других сервисов VPS. Release-воркфлоу вызывает этот билдер из CI по SSH и пушит образ прямо в реестр Forgejo (`docker buildx build --push`); локального `docker images` на VPS деплой не трогает.
 
 ## Почему nginx security headers & CORS
 
@@ -64,19 +64,25 @@ VPS общий/ограниченный по ресурсам. Сборка ид
 ## Итоговая ASCII-диаграмма (деплой)
 
 ```
-                 Forgejo Actions
-   ┌────────────────────────────┐
-   │  CI: validate openAPI.yaml  │
-   │  Release: ждёт CI, заливает │
-   │  исходники (tar+ssh)        │
-   └─────────────┬──────────────┘
-                 │ ssh (ed25519)
+                 Forgejo Actions (job Release)
+   ┌──────────────────────────────────────────────────────────────┐
+   │  CI: validate openAPI.yaml                                   │
+   │  Release: проверка версии → ждёт CI (poll)                   │
+   │        │                                                     │
+   │        ▼                                                     │
+   │  docker buildx build --push                                  │
+   │   (SSH-билдер slovo-constrained на VPS по DOCKER_HOST)       │
+   └─────────────┬────────────────────────────────────────────────┘
+                 │ push (PACKAGE_REGISTRY_TOKEN)
+                 ▼
+        ┌────────────── Реестр Forgejo ──────────────┐
+        │  slovo_propovedi/slovo-propovedi-docs:      │
+        │  DEPLOY_TAG  +  latest                     │
+        └──────────────────┬─────────────────────────┘
+                 │ docker pull (анонимно — реестр публичный)
                  ▼
         ┌───────────────────────────── VPS ─────────────────────────────┐
-        │  /slovo/docs/container-src   ← исходники (без .git)           │
-        │        │                                                      │
-        │        ▼                                                      │
-        │  docker buildx build --load  (билдер slovo-constrained, 1g)   │
+        │  scp: scripts/vps-deploy.sh → /tmp                            │
         │        │                                                      │
         │        ▼                                                      │
         │  systemd: slovo-docs.service (Wants=slovo-traefik)            │

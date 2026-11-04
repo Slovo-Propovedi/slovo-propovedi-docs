@@ -15,8 +15,9 @@
 push main ──────────► CI: validate:openapi ◄── PR в main
                           │  (github.ref_type != 'tag' guard)
                           ▼
-push tag v* ──► Release: проверка версии → ждёт CI (poll) → ssh → tar+ssh
-                 → vps-deploy.sh (buildx + systemd, инфра проверяется) → Forgejo Release
+push tag v* ──► Release: проверка версии → ждёт CI (poll)
+                 → buildx build --push (через SSH-билдер на VPS) → реестр Forgejo
+                 → ssh → vps-deploy.sh (docker pull + systemd, инфра проверяется) → Forgejo Release
 ```
 
 ## CI workflow (`ci.yml`)
@@ -76,17 +77,21 @@ GET {server}/api/v1/repos/{repo}/commits/{sha}/status
 
 Как получить значение секрета: на доверенной машине выполнить `ssh-keyscan <VPS_HOST> 2>/dev/null` (имя хоста — ровно как в секрете `VPS_HOST`) и сверить отпечатки (`… | ssh-keygen -lf -`) с ключами на самом сервере (`ssh-keygen -lf /etc/ssh/ssh_host_*_key.pub`). Строки с `#` — комментарии keyscan, они не нужны. При переустановке VPS ключ меняется — секрет нужно обновить. Секрет общий для всех репозиториев организации.
 
-### Почему деплой через tar+ssh (НЕ git clone)
+### Почему образ собирается в CI и доставляется из реестра
 
-У раннера **уже есть checkout по тегу** (шаг `actions/checkout@v4`). Поэтому:
-- исходники пакуются в `tar` (исключая `.git`) и передаются на VPS по ssh;
-- на VPS **не нужен git** и не нужно ничего клонировать повторно.
+Release job собирает образ раз и публикует: `docker buildx build --push` через общий SSH-билдер (`DOCKER_HOST` на VPS) пушит тег `$IMAGE_REF` в контейнер-реестр Forgejo, а `vps-deploy.sh` только делает `docker pull` этого тега и перезапускает systemd-юнит.
 
-Затем `scp` заливает `scripts/vps-deploy.sh` в `/tmp` и запускает его по ssh с env-переменными. Этот подход заменил прежний git clone на VPS (CHANGELOG 0.2.0: «Transfer source code via tar+ssh instead of git clone on VPS»).
+Такая форма доставки даёт:
+- **на VPS нет ни исходников, ни сборки** — деплой работает с готовым артефактом;
+- **один и тот же бинарь для всех запусков** — то, что пушнул CI, то и крутится в проде;
+- **обезличенный пулл** — реестр публичный (публичная организация), `docker pull` анонимен, а токен нужен только на push.
+
+Затем `scp` заливает `scripts/vps-deploy.sh` в `/tmp` и запускает его по ssh с env-переменными.
 
 ### Почему именно такие env-переменные на VPS
 
-- **`DEPLOY_TAG`** — git-тег (`github.ref_name`), чтобы скрипт знал, что деплоим.
+- **`DEPLOY_TAG`** — git-тег (github.ref_name), чтобы скрипт знал, какую версию деплоит.
+- **`IMAGE_REF`** — полный ref образа в реестре, который скрипт пуллит (`git.lightnode.ru/slovo_propovedi/slovo-propovedi-docs`); собирается в release-воркфлоу из `github.server_url` + `github.repository` и передаётся явно — переименование организации/репозитория роняет деплой с понятной ошибкой ещё до пулла.
 - **`DOCS_HOSTNAME`** — публичный hostname. Это Forgejo **variable** (`vars.DOCS_HOSTNAME`), а не secret: значение не чувствительное и должно быть видимым в логах/конфиге.
 
 ### Почему changelog через awk
@@ -103,11 +108,11 @@ GET {server}/api/v1/repos/{repo}/commits/{sha}/status
 
 ## VPS deploy script (`scripts/vps-deploy.sh`)
 
-Скрипт выполняется **на VPS от root**, запускается по ssh Release-workflow. Он заменил прежнюю Ansible-роль (`roles/custom/slovo-docs/`). Скрипт **идемпотентен** — безопасно перезапускать, обрабатывает и первый деплой, и обновление.
+Скрипт выполняется **на VPS от root**, запускается по ssh Release-workflow. Скрипт **идемпотентен** — безопасно перезапускать, обрабатывает и первый деплой, и обновление.
 
 ### Граница ответственности
 
-Скрипт владеет **только** контейнером `slovo-docs` и своей Docker-сетью `slovo-docs`. Вся общая инфраструктура — Docker, пользователь/группа `slovo`, buildx-билдер `slovo-constrained`, Traefik (`slovo-traefik.service`) и Docker-сеть `traefik` — принадлежит внешнему `slovo-propovedi-playbook` (Ansible). Скрипт её **не создаёт**: при отсутствии любого компонента деплой падает с явной ошибкой (`fail_missing` → «Provision it first: just setup-all»), а не доводит VPS до полусобранного состояния. Это устраняет дублирующуюся копию ролей плейбука, которая раньше жила в скрипте и незаметно расходилась с оригиналом.
+Скрипт владеет **только** контейнером `slovo-docs` и своей Docker-сетью `slovo-docs`. Вся общая инфраструктура — Docker, пользователь/группа `slovo`, buildx-билдер `slovo-constrained`, Traefik (`slovo-traefik.service`) и Docker-сеть `traefik` — принадлежит внешнему `slovo-propovedi-playbook` (Ansible). Скрипт её **не создаёт**: при отсутствии любого компонента деплой падает с явной ошибкой (`fail_missing` → «Provision it first: just setup-all»), а не доводит VPS до полусобранного состояния. Единственный источник истины о роли инфраструктуры — плейбук.
 
 ### Что именно проверяется (и не провижинится)
 
@@ -119,11 +124,11 @@ GET {server}/api/v1/repos/{repo}/commits/{sha}/status
 
 Имена этих трёх компонентов задаёт playbook, а в деплой они приходят из **переменных организации** `BUILDX_BUILDER`, `TRAEFIK_SERVICE`, `TRAEFIK_NETWORK` (общих для всех репозиториев). Значений по умолчанию в скрипте нет: если в playbook что-то переименуют, достаточно поменять переменную, а забытая переменная остановит деплой с понятной ошибкой ещё до SSH.
 
-Сеть `slovo-docs` — единственная, которую скрипт создаёт сам (шаг 4), т.к. она принадлежит этому сервису.
+Сеть `slovo-docs` — единственная, которую скрипт создаёт сам (шаг 3), т.к. она принадлежит этому сервису.
 
-### Почему проверка исходников
+### Почему на VPS нет исходников
 
-Скрипт ждёт, что в `$SRC_PATH` лежит залитый workflow `Dockerfile`; если его нет — ошибка «No source code found» (workflow должен передать код **до** запуска скрипта). Пути создаются и `chown`-ятся на `slovo`.
+Скрипту не нужно дерево исходников: его работающий вход — только образ из реестра и он сам в `/tmp`. Всё, что нужно для сборки (`Dockerfile`, спецификация, nginx-конфиг), уезжает в образ на этапе сборки в CI; на проде они продолжают жить внутри образа. Поэтому на VPS нет ни `container-src`, ни `.git`, ни прав на запись исходников — и деплой переносит по ssh только сам скрипт.
 
 ### Почему Traefik labels в отдельном файле
 
@@ -133,9 +138,9 @@ GET {server}/api/v1/repos/{repo}/commits/{sha}/status
 
 Контейнер docs подключается к **двум** сетям: `slovo-docs` (изоляция от остальных контейнеров, создаётся скриптом) и `traefik` (чтобы Traefik мог маршрутизировать к нему, создаётся плейбуком — скрипт лишь проверяет наличие). Наличие общей `traefik`-сети — обязательное условие, чтобы Traefik «увидел» контейнер.
 
-### Почему `docker buildx build --load`
+### Почему сборка идёт в CI (buildx на SSH-билдере)
 
-Сборка на VPS через buildx-билдер, а `--load` загружает образ в локальные docker images (иначе после сборки образ не был бы виден `docker run`).
+Release-воркфлоу сам собирает образ и пушит его в реестр Forgejo: `docker buildx build --push` через общий SSH-билдер (`DOCKER_HOST` на VPS, роль `slovo-buildx` лимитирует ресурсы билдера). Сборка целиком живёт в job-е: весь лог сборки остаётся в запуске Actions, и в проде затем крутится ровно тот tag, который собрал этот прогон. Клиентская запись buildx-билдера держится в job-е (`~/.docker/buildx`), поэтому SSH-билдер адоптитуется идемпотентно — подробности в комментариях release.yml. Пуш в реестр требует push-токена (`PACKAGE_REGISTRY_TOKEN`); пуллы из публичного реестра анонимны.
 
 ### Почему systemd unit `slovo-docs.service`
 
@@ -155,7 +160,7 @@ GET {server}/api/v1/repos/{repo}/commits/{sha}/status
 После `daemon-reload` и `restart` скрипт ждёт 2 сек и проверяет `systemctl is-active slovo-docs.service`; при неудаче выводит `systemctl status` и завершается с ошибкой.
 
 Затем — **пост-деплойная очистка** (строго non-fatal: с `set -e` сбой очистки не должен ронять успешный деплой, ошибки логируются как `WARN`). Она ограничивает рост диска на 2 ГБ VPS между релизами:
-- `docker image prune --force` — удаляет только dangling-образы (без `--all`); при каждом релизе тег `slovo-docs:latest` перевешивается, образ предыдущего релиза становится dangling и удаляется — откат делается повторным деплоем старого `v*`-тега;
+- `docker image prune --force` — удаляет только dangling-образы (без `--all`); образы под версионными тегами остаются: реестр хранит все `v*`-теги, и путь отката — повторный деплой старого тега (`vps-deploy.sh` пуллит именно исходную версию);
 - `docker buildx prune --builder slovo-constrained --keep-storage 2GB --force` — кэп кэша билдера.
 
 В конце удаляется `/tmp/vps-deploy.sh`.
@@ -170,6 +175,7 @@ Settings → Actions.
 | Secret | `VPS_SSH_KNOWN_HOSTS` | Закреплённый ключ хоста VPS (вывод `ssh-keyscan <VPS_HOST>`, сверенный с сервером) — см. «Почему SSH setup» |
 | Secret | `VPS_HOST` | Hostname или IP VPS |
 | Secret | `VPS_SSH_USER` | SSH-пользователь на VPS (`root`) |
+| Secret | `PACKAGE_REGISTRY_TOKEN` | Токен пуша в контейнер-реестр Forgejo (токен необходим всегда: релизы каждый раз пушат тег в реестр; публичный пулл токена не требует) |
 | Variable | `DOCS_HOSTNAME` | Публичный hostname сайта (например `docs.example.com`) — не чувствительное, поэтому variable, а не secret |
 | Variable | `BACKEND_API_HOSTNAME` | Hostname API — подставляется в CSP `connect-src` nginx, чтобы «Try it out» в Swagger UI мог обращаться к API |
 | Variable | `TRAEFIK_NETWORK` / `TRAEFIK_SERVICE` / `BUILDX_BUILDER` | Имена инфраструктуры из playbook (`traefik` / `slovo-traefik.service` / `slovo-constrained`) — переменные организации, общие для всех репозиториев |

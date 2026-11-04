@@ -21,6 +21,16 @@ FROM nginx:alpine
 LABEL org.opencontainers.image.title="slovo-propovedi-docs" \
   org.opencontainers.image.description="Standalone Swagger UI + OpenAPI spec for the Slovo Propovedi API"
 
+# OCI source label: links the image in the Forgejo container registry back to
+# this repository's Packages tab (belt-and-suspenders alongside the
+# registry-path naming convention). No hardcoded value: the release workflow
+# injects it via --build-arg OCI_IMAGE_SOURCE="${REPOSITORY_URL}/${GITHUB_REPOSITORY}".
+# The ARG (no default) is declared in this stage scope, next to the LABEL it
+# feeds: one ARG-fed label per LABEL line, deliberate assignment.
+ARG OCI_IMAGE_SOURCE
+
+LABEL org.opencontainers.image.source=$OCI_IMAGE_SOURCE
+
 # Backend API hostname baked at build time. REQUIRED — no default: the build
 # fails without --build-arg so a prod host can never be silently hardcoded.
 # Substituted into the `__BACKEND_API_HOSTNAME__` placeholders in nginx.conf

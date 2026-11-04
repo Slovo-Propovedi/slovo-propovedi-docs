@@ -42,7 +42,7 @@
 - **CI tag guard:** `if: github.ref_type != 'tag'` (некоторые версии Forgejo запускают workflow на теги несмотря на branches-фильтр).
 - **`HUSKY: 0` в CI** при `npm ci` — хуки только локально.
 - **wait-for-CI через polling** (40×15с), совпадение по префиксу `startswith("CI / validate")` — Forgejo не поддерживает `workflow_run`.
-- **Деплой через tar+ssh** (не git clone) — раннер уже имеет checkout по тегу.
+- **Сборка образа в CI, деплой из реестра** — release-воркфлоу собирает образ через общий SSH-билдер и пушит его в контейнер-реестр Forgejo; `vps-deploy.sh` тянет опубликованный тег, поэтому на VPS нет ни исходников, ни сборки.
 - **`Wants` (не `Requires`) на `slovo-traefik.service`** — перезапуск Traefik не должен останавливать docs-сервис (баг-фикс 0.1.1).
 - **buildx resource limits** (memory 1g, cpu-quota 80000).
 - **Security hardening контейнера:** `--cap-drop=ALL`, `--read-only`, tmpfs для /tmp /var/cache/nginx /run, `--memory=64m`, `--user=slovo:slovo` (non-root).

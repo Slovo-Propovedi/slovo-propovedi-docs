@@ -15,7 +15,7 @@ jobs:
 
       - name: Verify version consistency
         run: |
-          TAG_VERSION="${{ github.ref_name }}"
+          TAG_VERSION="$GITHUB_REF_NAME"
           # Strip optional 'v' prefix
           TAG_VERSION="${TAG_VERSION#v}"
           PKG_VERSION=$(node -p "require('./package.json').version")
@@ -76,43 +76,140 @@ jobs:
           printf 'StrictHostKeyChecking yes\n' > ~/.ssh/config
           chmod 600 ~/.ssh/config
 
+      - name: Build and push image to the registry
+        # The image is built by the persistent `slovo-constrained` builder ON
+        # the VPS (DOCKER_HOST over the SSH connection set up above — CI job
+        # containers have no docker socket) and pushed to the Forgejo container
+        # registry. The deploy step only pulls the published image, so no
+        # source tree is shipped to the VPS any more. The builder keeps layer
+        # caches between releases (the swagger-ui-dist fetch is cached too);
+        # --push uploads straight from the builder. Pulls are anonymous
+        # (public org), only pushes need the token.
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_SSH_USER: ${{ secrets.VPS_SSH_USER }}
+          PACKAGE_REGISTRY_TOKEN: ${{ secrets.PACKAGE_REGISTRY_TOKEN }}
+          REPOSITORY_URL: ${{ github.server_url }}
+          BUILDX_BUILDER: ${{ vars.BUILDX_BUILDER }}
+          DEPLOY_TAG: ${{ github.ref_name }}
+          REGISTRY_USER: ${{ github.repository_owner }}
+          # Backend API hostname baked into nginx.conf + openAPI.yaml at build
+          # time (validated + substituted by the Dockerfile).
+          BACKEND_API_HOSTNAME: ${{ vars.BACKEND_API_HOSTNAME }}
+        run: |
+          set -e
+          if [ -z "$BACKEND_API_HOSTNAME" ]; then
+            echo "::error::BACKEND_API_HOSTNAME is empty — configure the org/repo variable in Forgejo."
+            exit 1
+          fi
+
+          # Docker CLI + buildx are not part of the runner image: install
+          # pinned static builds into the job (no daemon — the CLI talks to the
+          # VPS daemon over SSH via DOCKER_HOST).
+          DOCKER_CLI_VERSION=27.5.1
+          BUILDX_VERSION=0.20.1
+          mkdir -p "$HOME/.docker-cli"
+          curl -fsSL "https://download.docker.com/linux/static/stable/x86_64/docker-${DOCKER_CLI_VERSION}.tgz" \
+            | tar xz -C "$HOME/.docker-cli" --strip-components=1 docker/docker
+          curl -fsSL -o "$HOME/.docker-cli/docker-buildx" \
+            "https://github.com/docker/buildx/releases/download/v${BUILDX_VERSION}/buildx-v${BUILDX_VERSION}.linux-amd64"
+          chmod +x "$HOME/.docker-cli/docker-buildx"
+          export PATH="$HOME/.docker-cli:$PATH"
+
+          REGISTRY_HOST="${REPOSITORY_URL#https://}"
+          # Image names must be lowercase: owner/repo come from the runner's
+          # GITHUB_REPOSITORY env lowercased whole (${var,,}), so no org is
+          # hardcoded and the ref always matches this repo's Packages tab
+          # auto-link (Forgejo matches owner/repo case-insensitively).
+          REGISTRY_IMAGE="${REPOSITORY_URL#*://}/${GITHUB_REPOSITORY,,}"
+          IMAGE_REF="$REGISTRY_IMAGE"
+          echo "IMAGE_REF=$IMAGE_REF" >> "$GITHUB_ENV"
+
+          # Login writes only to this job's docker config; buildx forwards the
+          # credentials to the remote builder for the push. Never printed.
+          printf '%s' "$PACKAGE_REGISTRY_TOKEN" \
+            | docker login "$REGISTRY_HOST" --username "$REGISTRY_USER" --password-stdin
+
+          export DOCKER_HOST="ssh://$VPS_SSH_USER@$VPS_HOST"
+          # Builder records live in THIS client's local store (~/.docker/buildx),
+          # not on the daemon: a fresh job has no record of the host's
+          # pre-provisioned $BUILDX_BUILDER (playbook role `slovo-buildx`), so
+          # `--builder` would fail with "no builder found" even though its
+          # buildkit container runs on the VPS. Adopt the builder idempotently
+          # while the job's local record is missing (buildx 0.20 semantics,
+          # verified against the release source):
+          #   - container already present on the daemon -> `create` just saves
+          #     the local record and `--bootstrap` only probes the RUNNING
+          #     container (start on a running container is a no-op, nothing is
+          #     restarted) — its layer cache stays intact;
+          #   - container absent (first release / host rebuilt) -> recreated
+          #     with the EXACT `slovo-buildx` role parameters, so a CI-created
+          #     builder matches the playbook one;
+          #   - parallel jobs racing the same first create -> buildx treats a
+          #     container-name conflict ("already in use") as adopt-and-wait,
+          #     so the loser ends up on the winner's container.
+          if ! docker buildx inspect "$BUILDX_BUILDER" >/dev/null 2>&1; then
+            docker buildx create \
+              --name "$BUILDX_BUILDER" \
+              --driver docker-container \
+              --driver-opt "memory=1g" \
+              --driver-opt "cpu-quota=80000" \
+              --bootstrap >/dev/null
+          fi
+          # Single-platform linux/amd64 like the former on-VPS build — the 4 GB
+          # host gets no multi-arch builds.
+          docker buildx build \
+            --builder "$BUILDX_BUILDER" \
+            --platform linux/amd64 \
+            --push \
+            --tag "$IMAGE_REF:$DEPLOY_TAG" \
+            --tag "$IMAGE_REF:latest" \
+            --build-arg BACKEND_API_HOSTNAME="$BACKEND_API_HOSTNAME" \
+            --build-arg OCI_IMAGE_SOURCE="${REPOSITORY_URL}/${GITHUB_REPOSITORY}" \
+            .
+
       - name: Deploy to VPS
         env:
           VPS_HOST: ${{ secrets.VPS_HOST }}
           VPS_SSH_USER: ${{ secrets.VPS_SSH_USER }}
           DEPLOY_TAG: ${{ github.ref_name }}
           DOCS_HOSTNAME: ${{ vars.DOCS_HOSTNAME }}
-          BACKEND_API_HOSTNAME: ${{ vars.BACKEND_API_HOSTNAME }}
           # Shared infra names (org vars mirroring the playbook).
           TRAEFIK_NETWORK: ${{ vars.TRAEFIK_NETWORK }}
           TRAEFIK_SERVICE: ${{ vars.TRAEFIK_SERVICE }}
           BUILDX_BUILDER: ${{ vars.BUILDX_BUILDER }}
+          # The registry image ref (IMAGE_REF via GITHUB_ENV) is derived from
+          # the runner's GITHUB_SERVER_URL/GITHUB_REPOSITORY; no org vars needed.
+          PACKAGE_REGISTRY_TOKEN: ${{ secrets.PACKAGE_REGISTRY_TOKEN }}
         run: |
           set -e
-          # Fail fast before any SSH/build work if org vars are not configured.
-          for var in VPS_HOST DOCS_HOSTNAME BACKEND_API_HOSTNAME TRAEFIK_NETWORK TRAEFIK_SERVICE BUILDX_BUILDER; do
+          # Fail fast before any SSH/deploy work if org vars are not configured.
+          for var in VPS_HOST DOCS_HOSTNAME TRAEFIK_NETWORK TRAEFIK_SERVICE BUILDX_BUILDER \
+                     PACKAGE_REGISTRY_TOKEN; do
             if [ -z "${!var}" ]; then
               echo "::error::$var is empty — configure the org/repo variable '$var' in Forgejo."
               exit 1
             fi
           done
+          if [ -z "${IMAGE_REF:-}" ]; then
+            echo "::error::IMAGE_REF is not set — the registry build step must export it"
+            exit 1
+          fi
           SSH_TARGET="$VPS_SSH_USER@$VPS_HOST"
-          # Transfer source code (runner already has the tagged checkout)
-          tar czf - --exclude='.git' . \
-            | ssh "$SSH_TARGET" "rm -rf /slovo/docs/container-src && mkdir -p /slovo/docs/container-src && tar xzf - -C /slovo/docs/container-src"
           # Upload and run deploy script
           scp scripts/vps-deploy.sh "$SSH_TARGET:/tmp/vps-deploy.sh"
           # Shared infra (Traefik, Docker, slovo user, buildx) is owned by the
-          # slovo-propovedi playbook; the script only verifies it.
+          # slovo-propovedi playbook; the script only verifies it. The image was
+          # built and pushed in the previous step; this one just pulls it.
           # Every value is shell-quoted for the remote shell (printf %q): a quote
           # in a tag or variable can never break out of its argument.
-          REMOTE_ENV="$(printf 'DEPLOY_TAG=%q DOCS_HOSTNAME=%q BACKEND_API_HOSTNAME=%q TRAEFIK_NETWORK=%q TRAEFIK_SERVICE=%q BUILDX_BUILDER=%q' \
-            "$DEPLOY_TAG" "$DOCS_HOSTNAME" "$BACKEND_API_HOSTNAME" "$TRAEFIK_NETWORK" "$TRAEFIK_SERVICE" "$BUILDX_BUILDER")"
+          REMOTE_ENV="$(printf 'DEPLOY_TAG=%q DOCS_HOSTNAME=%q TRAEFIK_NETWORK=%q TRAEFIK_SERVICE=%q BUILDX_BUILDER=%q IMAGE_REF=%q' \
+            "$DEPLOY_TAG" "$DOCS_HOSTNAME" "$TRAEFIK_NETWORK" "$TRAEFIK_SERVICE" "$BUILDX_BUILDER" "$IMAGE_REF")"
           ssh "$SSH_TARGET" "chmod +x /tmp/vps-deploy.sh && $REMOTE_ENV bash /tmp/vps-deploy.sh"
 
       - name: Extract changelog section
         run: |
-          VERSION="${{ github.ref_name }}"
+          VERSION="$GITHUB_REF_NAME"
           VERSION="${VERSION#v}"
           awk -v target="## [$VERSION]" '
             index($0, target) == 1 { found = 1; next }
