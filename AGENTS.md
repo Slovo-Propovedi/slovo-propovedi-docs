@@ -40,6 +40,12 @@ make prod-build SWAGGER_UI_VERSION=5.40.0
 docker build --build-arg SWAGGER_UI_VERSION=5.40.0 -t slovo-propovedi-docs .
 ```
 
+**Centralized verification:** full runs are NEVER part of an implementation task and NEVER run in parallel with each other. Agents working on delegated tasks must NOT run project-wide checks on their own (`npm run validate:openapi`). During implementation an agent runs only targeted checks, scoped to what it changed: one `npm run validate:openapi` pass after editing `openAPI.yaml`, not repeated full passes.
+
+The full verification pass runs ONCE as a SEPARATE dedicated task, AFTER all implementation tasks are finished: the orchestrator delegates it as a single task and routes any failures back to the responsible agent. Full runs are never executed concurrently — two concurrent full runs hang the machine (laptop freeze). This holds in single-agent and multi-agent sessions alike.
+
+The husky `pre-commit` hook is exempt: hooks always run — the rule bans agent-initiated duplicate or parallel full runs, not the mandatory hook.
+
 ## Mandatory Workflows: SDD, Plan-Implement, TDD
 
 Every non-trivial task runs through a workflow BEFORE implementation. Workflow skills live in `.opencode/skills/<name>/SKILL.md` with a byte-identical mirror in `.claude/skills/` (keep both copies in sync). Spec-driven commands live in `.opencode/commands/speckit.*.md` (mirrored in `.claude/commands/`).
