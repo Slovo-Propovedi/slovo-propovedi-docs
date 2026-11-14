@@ -1,7 +1,7 @@
 openapi: 3.2.0
 info:
   title: API — Слово.Проповеди
-  version: 0.23.4
+  version: 0.23.5
   description: |
     REST API сервиса «Слово.Проповеди».
     Позволяет управлять проповедями, плейлистами, разделами, загружать файлы и работать с пользователями.
@@ -1344,6 +1344,9 @@ components:
           type: string
         artwork:
           type: string
+        artworkBlurhash:
+          type: [string, 'null']
+          description: BlurHash обложки — заглушка от бэкенда; null, если хэш ещё не посчитан.
         # Position of this playlist within the section that references it.
         position:
           type: integer
@@ -1383,6 +1386,9 @@ components:
           type: string
         artwork:
           type: string
+        artworkBlurhash:
+          type: [string, 'null']
+          description: BlurHash обложки — заглушка от бэкенда; null, если хэш ещё не посчитан.
         book:
           type: [string, 'null']
         chapter:
@@ -1456,6 +1462,9 @@ components:
           type: string
         artwork:
           type: string
+        artworkBlurhash:
+          type: [string, 'null']
+          description: BlurHash обложки — заглушка от бэкенда; null, если хэш ещё не посчитан.
         book:
           type: [string, 'null']
         chapter:
@@ -1529,6 +1538,9 @@ components:
           type: string
         artwork:
           type: string
+        artworkBlurhash:
+          type: [string, 'null']
+          description: BlurHash обложки — заглушка от бэкенда; null, если хэш ещё не посчитан.
         sections:
           type: array
           items:
